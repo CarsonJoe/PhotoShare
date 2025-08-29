@@ -1,5 +1,5 @@
 @echo off
-setlocal enableextensions
+setlocal EnableExtensions EnableDelayedExpansion
 
 REM Determine repo root (folder of this script)
 set REPO_ROOT=%~dp0
@@ -18,16 +18,25 @@ if not exist .nojekyll (
 
 echo [2/3] Adding and committing changes...
 git add -A
-for /f "tokens=*" %%a in ('git status --porcelain') do set CHANGES=1
+rem Reset change detector each run
+set CHANGES=
+for /f "delims=" %%a in ('git status --porcelain') do set CHANGES=1
 if defined CHANGES (
-  set COMMIT_MSG=Publish: %DATE% %TIME%
-  git commit -m "%COMMIT_MSG%"
+  rem Build a stable timestamp via PowerShell to avoid locale quirks
+  for /f "delims=" %%t in ('powershell -NoProfile -Command "(Get-Date).ToString(\"yyyy-MM-dd HH:mm:ss\")"') do set TS=%%t
+  if not defined TS set TS=now
+  set COMMIT_MSG=Publish: !TS!
+  echo Committing with message: !COMMIT_MSG!
+  git commit -m "!COMMIT_MSG!"
 ) else (
   echo No changes to commit.
 )
 
 echo [3/3] Pushing to origin...
-git push
+for /f "delims=" %%b in ('git rev-parse --abbrev-ref HEAD') do set BRANCH=%%b
+if not defined BRANCH set BRANCH=main
+echo Current branch: %BRANCH%
+git push origin %BRANCH%
 if errorlevel 1 (
   echo Push failed. Ensure the remote is set and you are logged in.
   popd & exit /b 1
@@ -36,4 +45,3 @@ if errorlevel 1 (
 echo Done. If not already, enable GitHub Pages for this repo (Settings > Pages > Deploy from main, root).
 popd
 exit /b 0
-
