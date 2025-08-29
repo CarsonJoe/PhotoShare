@@ -15,6 +15,14 @@
     </header>
 
     <main class="container">
+      <div class="toolbar">
+        <button id="btnSelect" class="btn">Select</button>
+        <div id="selectActions" class="actions" hidden>
+          <button id="btnCancel" class="btn">Cancel</button>
+          <button id="btnSelectAll" class="btn">Select All</button>
+          <button id="btnDownload" class="btn primary" disabled>Download Selected (0)</button>
+        </div>
+      </div>
       <section>
         <h2 id="groupTitle" class="section-title"></h2>
         <div id="photos" class="grid photos-grid" aria-live="polite"></div>
@@ -78,19 +86,111 @@
             return;
           }
 
+          // Selection state
+          let selectionMode = false;
+          const selected = new Set();
+          let lastSelectedIndex = null;
+
+          const btnSelect = document.getElementById('btnSelect');
+          const actions = document.getElementById('selectActions');
+          const btnCancel = document.getElementById('btnCancel');
+          const btnSelectAll = document.getElementById('btnSelectAll');
+          const btnDownload = document.getElementById('btnDownload');
+
+          function updateToolbar(){
+            const count = selected.size;
+            btnDownload.textContent = `Download Selected (${count})`;
+            btnDownload.disabled = count === 0;
+          }
+
+          function enterSelect(){
+            if (selectionMode) return;
+            selectionMode = true;
+            document.body.classList.add('select-mode');
+            btnSelect.hidden = true;
+            actions.hidden = false;
+          }
+          function exitSelect(){
+            selectionMode = false;
+            document.body.classList.remove('select-mode');
+            btnSelect.hidden = false;
+            actions.hidden = true;
+            selected.clear();
+            lastSelectedIndex = null;
+            // Clear visual state
+            document.querySelectorAll('.photo-card.selected').forEach(el=>el.classList.remove('selected'));
+            updateToolbar();
+          }
+
+          btnSelect.addEventListener('click', enterSelect);
+          btnCancel.addEventListener('click', exitSelect);
+          btnSelectAll.addEventListener('click', ()=>{
+            selected.clear();
+            for (let i=0;i<group.photos.length;i++){ selected.add(i); }
+            document.querySelectorAll('.photo-card').forEach(el=>el.classList.add('selected'));
+            updateToolbar();
+          });
+          btnDownload.addEventListener('click', ()=>{
+            if (selected.size === 0) return;
+            const indices = Array.from(selected.values()).sort((a,b)=>a-b);
+            let delay = 0;
+            for (const i of indices){
+              const full = group.photos[i];
+              const url = `../${full}`;
+              const name = full.split('/').slice(-1)[0];
+              setTimeout(()=>{
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = name;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+              }, delay);
+              delay += 150; // stagger to improve browser compatibility
+            }
+          });
+
+          function setSelected(i, val){
+            if (val) selected.add(i); else selected.delete(i);
+            const card = document.querySelector(`.photo-card[data-index="${i}"]`);
+            if (card) card.classList.toggle('selected', val);
+            updateToolbar();
+          }
+
+          function toggleSelected(i){
+            setSelected(i, !selected.has(i));
+          }
+
+          function handleSelectClick(i, e){
+            if (e.shiftKey && lastSelectedIndex !== null){
+              const start = Math.min(lastSelectedIndex, i);
+              const end = Math.max(lastSelectedIndex, i);
+              for (let k=start; k<=end; k++){ setSelected(k, true); }
+            } else {
+              toggleSelected(i);
+            }
+            lastSelectedIndex = i;
+          }
+
           // Build photo grid using thumbnails when available
           for (let i = 0; i < (group.photos || []).length; i++) {
             const p = group.photos[i];
             const t = (group.thumbs && group.thumbs[i]) ? group.thumbs[i] : p;
             const card = document.createElement('div');
             card.className = 'photo-card';
+            card.dataset.index = String(i);
 
             const a = document.createElement('a');
             a.href = `../${p}`;
             a.rel = 'noopener';
             a.addEventListener('click', (e) => {
-              e.preventDefault();
-              openLightbox(i);
+              if (selectionMode) {
+                e.preventDefault();
+                handleSelectClick(i, e);
+              } else {
+                e.preventDefault();
+                openLightbox(i);
+              }
             });
 
             const img = document.createElement('img');
@@ -98,24 +198,21 @@
             img.alt = group.name || '';
             img.src = `../${t}`;
 
-            const bar = document.createElement('div');
-            bar.className = 'photo-bar';
-
-            const name = document.createElement('span');
-            name.className = 'photo-name';
-            name.textContent = p.split('/').slice(-1)[0];
-
-            const dl = document.createElement('a');
-            dl.href = `../${p}`;
-            dl.download = '';
-            dl.className = 'download';
-            dl.textContent = 'Download';
+            const badge = document.createElement('button');
+            badge.type = 'button';
+            badge.className = 'select-badge';
+            badge.title = 'Select';
+            badge.textContent = '✓';
+            badge.addEventListener('click', (e)=>{
+              e.preventDefault();
+              e.stopPropagation();
+              if (!selectionMode) enterSelect();
+              handleSelectClick(i, e);
+            });
 
             a.appendChild(img);
-            bar.appendChild(name);
-            bar.appendChild(dl);
             card.appendChild(a);
-            card.appendChild(bar);
+            card.appendChild(badge);
             photosEl.appendChild(card);
           }
           // Lightbox setup
