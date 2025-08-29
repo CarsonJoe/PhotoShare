@@ -4,13 +4,13 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>PhotoShare — Groups</title>
-    <link rel="stylesheet" href="/app/styles.css" />
+    <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <header class="site-header">
       <h1 class="site-title">PhotoShare</h1>
       <nav class="site-nav">
-        <a href="/app/index.html" class="active">Groups</a>
+        <a href="./index.html" class="active">Groups</a>
       </nav>
     </header>
 
@@ -28,7 +28,7 @@
       <span id="generatedAt"></span>
     </footer>
 
-    <script src="/app/main.js"></script>
+    <script src="./main.js"></script>
     <script>
       window.addEventListener('DOMContentLoaded', async () => {
         const data = await window.PhotoShare.loadManifest();
@@ -47,12 +47,12 @@
         for (const g of data.groups) {
           const a = document.createElement('a');
           a.className = 'group-card';
-          a.href = `/app/group.html?g=${encodeURIComponent(g.id)}`;
+          a.href = `group.html?g=${encodeURIComponent(g.id)}`;
 
           const img = document.createElement('img');
           img.loading = 'lazy';
           img.alt = `${g.name} cover`;
-          img.src = g.cover || '/app/placeholder.svg';
+          img.src = g.cover ? `../${g.cover}` : 'placeholder.svg';
 
           const title = document.createElement('div');
           title.className = 'group-title';
@@ -66,4 +66,3 @@
     </script>
   </body>
   </html>
-

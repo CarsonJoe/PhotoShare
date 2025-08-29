@@ -1,5 +1,5 @@
 (function(){
-  const ManifestPath = '/app/photos.json';
+  const ManifestPath = './photos.json';
 
   async function loadManifest(){
     const url = `${ManifestPath}?v=${Date.now()}`; // bust caches on refresh
@@ -25,4 +25,3 @@
 
   window.PhotoShare = { loadManifest };
 })();
-

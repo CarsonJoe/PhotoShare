@@ -4,13 +4,13 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>PhotoShare — Group</title>
-    <link rel="stylesheet" href="/app/styles.css" />
+    <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <header class="site-header">
-      <h1 class="site-title"><a href="/app/index.html">PhotoShare</a></h1>
+      <h1 class="site-title"><a href="index.html">PhotoShare</a></h1>
       <nav class="site-nav">
-        <a href="/app/index.html">Groups</a>
+        <a href="index.html">Groups</a>
         <span id="groupCrumb" class="crumb"></span>
       </nav>
     </header>
@@ -29,7 +29,7 @@
       <span id="generatedAt"></span>
     </footer>
 
-    <script src="/app/main.js"></script>
+    <script src="./main.js"></script>
     <script>
       function getParam(name) {
         const p = new URLSearchParams(location.search);
@@ -61,14 +61,14 @@
           card.className = 'photo-card';
 
           const a = document.createElement('a');
-          a.href = `/${p}`;
+          a.href = `../${p}`;
           a.target = '_blank';
           a.rel = 'noopener';
 
           const img = document.createElement('img');
           img.loading = 'lazy';
           img.alt = group.name;
-          img.src = `/${p}`;
+          img.src = `../${p}`;
 
           const bar = document.createElement('div');
           bar.className = 'photo-bar';
@@ -78,7 +78,7 @@
           name.textContent = p.split('/').slice(-1)[0];
 
           const dl = document.createElement('a');
-          dl.href = `/${p}`;
+          dl.href = `../${p}`;
           dl.download = '';
           dl.className = 'download';
           dl.textContent = 'Download';
@@ -94,4 +94,3 @@
     </script>
   </body>
   </html>
-
