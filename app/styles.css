@@ -15,12 +15,15 @@ html,body{
 
 .container{ max-width:1100px; margin:0 auto; padding:24px; }
 
-.site-header{ display:flex; align-items:center; justify-content:space-between; padding:16px 24px; border-bottom:1px solid var(--border); position:sticky; top:0; background:var(--bg); z-index:10; }
+.site-header{ display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-bottom:1px solid rgba(229,231,235,0.5); position:sticky; top:0; z-index:20; position:sticky; backdrop-filter: saturate(140%) blur(10px); -webkit-backdrop-filter: saturate(140%) blur(10px); background:linear-gradient(180deg, rgba(255,255,255,0.75), rgba(255,255,255,0.45)); }
 .site-title{ font-size:20px; margin:0; }
 .site-title a{ color:inherit; text-decoration:none; }
-.site-nav{ display:flex; gap:12px; color:var(--muted); }
-.site-nav a{ color:inherit; text-decoration:none; padding:4px 8px; border-radius:6px; }
-.site-nav a.active, .site-nav a:hover{ color:var(--fg); background:var(--card); }
+.header-left{ display:flex; align-items:center; gap:10px; }
+.back-link{ display:none; text-decoration:none; font-size:22px; line-height:1; padding:6px 8px; border-radius:8px; color:var(--fg); }
+.back-link:hover{ background:rgba(0,0,0,0.06); }
+.header-right{ display:flex; align-items:center; gap:8px; }
+.header-center{ position:absolute; left:50%; transform:translateX(-50%); font-weight:600; color:var(--fg); pointer-events:none; }
+.header-btn{ padding:8px 12px; }
 
 .site-footer{ padding:12px 24px; border-top:1px solid var(--border); color:var(--muted); font-size:12px; }
 
@@ -58,3 +61,15 @@ code{ background:var(--card); padding:2px 6px; border-radius:6px; border:1px sol
 .lb-prev{ left:18px; }
 .lb-next{ right:18px; }
 .lb-close{ top:18px; right:18px; transform:none; font-size:26px; }
+
+/* Bottom action bar for selection */
+.bottom-bar{ position:fixed; left:0; right:0; bottom:0; transform:translateY(100%); transition:transform .18s ease; z-index:25; backdrop-filter:saturate(140%) blur(10px); -webkit-backdrop-filter:saturate(140%) blur(10px); background:linear-gradient(0deg, rgba(255,255,255,0.85), rgba(255,255,255,0.55)); border-top:1px solid rgba(229,231,235,0.6); }
+.bottom-inner{ max-width:1100px; margin:0 auto; padding:10px 16px; display:flex; gap:8px; align-items:center; justify-content:flex-end; flex-wrap:wrap; }
+.select-mode .bottom-bar{ transform:translateY(0); }
+
+@media (max-width: 640px){
+  .site-title{ display:none; }
+  .back-link{ display:inline-flex; }
+  .header-center{ font-size:16px; }
+  .photos-grid{ grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+}

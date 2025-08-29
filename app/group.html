@@ -8,22 +8,17 @@
   </head>
   <body>
     <header class="site-header">
-      <h1 class="site-title"><a href="index.html">Carson's Photos</a></h1>
-      <nav class="site-nav">
-        <span id="groupCrumb" class="crumb"></span>
-      </nav>
+      <div class="header-left">
+        <a class="back-link" href="index.html" aria-label="Back">←</a>
+        <h1 class="site-title"><a href="index.html">Carson's Photos</a></h1>
+      </div>
+      <div class="header-center" id="groupHeaderTitle"></div>
+      <div class="header-right">
+        <button id="btnSelectHeader" class="btn header-btn">Select</button>
+      </div>
     </header>
 
     <main class="container">
-      <div class="toolbar">
-        <button id="btnSelect" class="btn">Select</button>
-        <div id="selectActions" class="actions" hidden>
-          <button id="btnCancel" class="btn">Cancel</button>
-          <button id="btnSelectAll" class="btn">Select All</button>
-          <button id="btnShare" class="btn" disabled>Share Selected (0)</button>
-          <button id="btnDownload" class="btn primary" disabled>Download Selected (0)</button>
-        </div>
-      </div>
       <section>
         <h2 id="groupTitle" class="section-title"></h2>
         <div id="photos" class="grid photos-grid" aria-live="polite"></div>
@@ -32,6 +27,14 @@
         </div>
       </section>
     </main>
+
+    <div class="bottom-bar" id="bottomBar" aria-live="polite">
+      <div class="bottom-inner">
+        <button id="btnSelectAll" class="btn">Select All</button>
+        <button id="btnShare" class="btn" hidden disabled>Share Selected (0)</button>
+        <button id="btnDownload" class="btn primary" disabled>Download Selected (0)</button>
+      </div>
+    </div>
 
     <div id="lightbox" class="lightbox" hidden>
       <button class="lb-btn lb-close" aria-label="Close">×</button>
@@ -64,7 +67,7 @@
           const photosEl = document.getElementById('photos');
           const emptyEl = document.getElementById('emptyState');
           const titleEl = document.getElementById('groupTitle');
-          const crumbEl = document.getElementById('groupCrumb');
+          const headerTitleEl = document.getElementById('groupHeaderTitle');
           const genEl = document.getElementById('generatedAt');
 
           if (!group) {
@@ -74,7 +77,7 @@
           }
 
           if (titleEl) titleEl.textContent = group.name || id;
-          if (crumbEl) crumbEl.textContent = group.name || id;
+          if (headerTitleEl) headerTitleEl.textContent = group.name || id;
           if (genEl) genEl.textContent = data.generatedAt ? `Updated: ${data.generatedAt}` : '';
 
           if (!photosEl) {
@@ -88,9 +91,7 @@
           const selected = new Set();
           let lastSelectedIndex = null;
 
-          const btnSelect = document.getElementById('btnSelect');
-          const actions = document.getElementById('selectActions');
-          const btnCancel = document.getElementById('btnCancel');
+          const btnSelectHeader = document.getElementById('btnSelectHeader');
           const btnSelectAll = document.getElementById('btnSelectAll');
           const btnShare = document.getElementById('btnShare');
           const btnDownload = document.getElementById('btnDownload');
@@ -123,14 +124,12 @@
             if (selectionMode) return;
             selectionMode = true;
             document.body.classList.add('select-mode');
-            btnSelect.hidden = true;
-            actions.hidden = false;
+            if (btnSelectHeader) btnSelectHeader.textContent = 'Cancel';
           }
           function exitSelect(){
             selectionMode = false;
             document.body.classList.remove('select-mode');
-            btnSelect.hidden = false;
-            actions.hidden = true;
+            if (btnSelectHeader) btnSelectHeader.textContent = 'Select';
             selected.clear();
             lastSelectedIndex = null;
             // Clear visual state
@@ -138,8 +137,7 @@
             updateToolbar();
           }
 
-          btnSelect.addEventListener('click', enterSelect);
-          btnCancel.addEventListener('click', exitSelect);
+          btnSelectHeader.addEventListener('click', ()=> selectionMode ? exitSelect() : enterSelect());
           btnSelectAll.addEventListener('click', ()=>{
             selected.clear();
             for (let i=0;i<group.photos.length;i++){ selected.add(i); }
