@@ -1,0 +1,47 @@
+:root{
+  --bg: #ffffff;
+  --fg: #111111;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+  --card: #f9fafb;
+  --accent: #111111;
+}
+
+*{ box-sizing: border-box; }
+html,body{
+  padding:0; margin:0; background:var(--bg); color:var(--fg);
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+}
+
+.container{ max-width:1100px; margin:0 auto; padding:24px; }
+
+.site-header{ display:flex; align-items:center; justify-content:space-between; padding:16px 24px; border-bottom:1px solid var(--border); position:sticky; top:0; background:var(--bg); z-index:10; }
+.site-title{ font-size:20px; margin:0; }
+.site-title a{ color:inherit; text-decoration:none; }
+.site-nav{ display:flex; gap:12px; color:var(--muted); }
+.site-nav a{ color:inherit; text-decoration:none; padding:4px 8px; border-radius:6px; }
+.site-nav a.active, .site-nav a:hover{ color:var(--fg); background:var(--card); }
+
+.site-footer{ padding:12px 24px; border-top:1px solid var(--border); color:var(--muted); font-size:12px; }
+
+.section-title{ margin:8px 0 16px; font-size:18px; }
+
+.grid{ display:grid; gap:16px; }
+.groups-grid{ grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+.photos-grid{ grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+
+.group-card{ display:block; border:1px solid var(--border); border-radius:10px; overflow:hidden; text-decoration:none; color:inherit; background:var(--bg); }
+.group-card img{ display:block; width:100%; height:180px; object-fit:cover; background:var(--card); }
+.group-title{ padding:10px 12px; font-weight:600; border-top:1px solid var(--border); }
+
+.photo-card{ border:1px solid var(--border); border-radius:10px; overflow:hidden; background:var(--bg); display:flex; flex-direction:column; }
+.photo-card img{ display:block; width:100%; height:260px; object-fit:cover; background:var(--card); }
+.photo-bar{ display:flex; align-items:center; justify-content:space-between; gap:8px; padding:10px 12px; border-top:1px solid var(--border); }
+.photo-name{ color:var(--muted); font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.download{ text-decoration:none; color:var(--bg); background:var(--accent); padding:6px 10px; border-radius:8px; font-size:12px; }
+.download:hover{ opacity:0.9; }
+
+.empty{ color:var(--muted); border:1px dashed var(--border); padding:18px; border-radius:10px; background:var(--card); }
+
+code{ background:var(--card); padding:2px 6px; border-radius:6px; border:1px solid var(--border); }
+

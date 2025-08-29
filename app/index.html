@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PhotoShare — Groups</title>
+    <link rel="stylesheet" href="/app/styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <h1 class="site-title">PhotoShare</h1>
+      <nav class="site-nav">
+        <a href="/app/index.html" class="active">Groups</a>
+      </nav>
+    </header>
+
+    <main class="container">
+      <section>
+        <h2 class="section-title">Photo Groups</h2>
+        <div id="groups" class="grid groups-grid" aria-live="polite"></div>
+        <div id="emptyState" class="empty" hidden>
+          <p>No photo groups found. Add folders under <code>/photos</code> and run <code>publish.bat</code>.</p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span id="generatedAt"></span>
+    </footer>
+
+    <script src="/app/main.js"></script>
+    <script>
+      window.addEventListener('DOMContentLoaded', async () => {
+        const data = await window.PhotoShare.loadManifest();
+        const groupsEl = document.getElementById('groups');
+        const emptyEl = document.getElementById('emptyState');
+        const genEl = document.getElementById('generatedAt');
+
+        if (!data || !data.groups || data.groups.length === 0) {
+          emptyEl.hidden = false;
+          genEl.textContent = '';
+          return;
+        }
+
+        genEl.textContent = data.generatedAt ? `Updated: ${data.generatedAt}` : '';
+
+        for (const g of data.groups) {
+          const a = document.createElement('a');
+          a.className = 'group-card';
+          a.href = `/app/group.html?g=${encodeURIComponent(g.id)}`;
+
+          const img = document.createElement('img');
+          img.loading = 'lazy';
+          img.alt = `${g.name} cover`;
+          img.src = g.cover || '/app/placeholder.svg';
+
+          const title = document.createElement('div');
+          title.className = 'group-title';
+          title.textContent = `${g.name} (${g.photos.length})`;
+
+          a.appendChild(img);
+          a.appendChild(title);
+          groupsEl.appendChild(a);
+        }
+      });
+    </script>
+  </body>
+  </html>
+

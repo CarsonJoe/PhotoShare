@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PhotoShare — Group</title>
+    <link rel="stylesheet" href="/app/styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <h1 class="site-title"><a href="/app/index.html">PhotoShare</a></h1>
+      <nav class="site-nav">
+        <a href="/app/index.html">Groups</a>
+        <span id="groupCrumb" class="crumb"></span>
+      </nav>
+    </header>
+
+    <main class="container">
+      <section>
+        <h2 id="groupTitle" class="section-title"></h2>
+        <div id="photos" class="grid photos-grid" aria-live="polite"></div>
+        <div id="emptyState" class="empty" hidden>
+          <p>Group not found or has no photos.</p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span id="generatedAt"></span>
+    </footer>
+
+    <script src="/app/main.js"></script>
+    <script>
+      function getParam(name) {
+        const p = new URLSearchParams(location.search);
+        return p.get(name);
+      }
+
+      window.addEventListener('DOMContentLoaded', async () => {
+        const data = await window.PhotoShare.loadManifest();
+        const id = getParam('g');
+        const group = data && data.groups ? data.groups.find(x => x.id === id) : null;
+        const photosEl = document.getElementById('photos');
+        const emptyEl = document.getElementById('emptyState');
+        const titleEl = document.getElementById('groupTitle');
+        const crumbEl = document.getElementById('groupCrumb');
+        const genEl = document.getElementById('generatedAt');
+
+        if (!group) {
+          emptyEl.hidden = false;
+          genEl.textContent = '';
+          return;
+        }
+
+        titleEl.textContent = group.name;
+        crumbEl.textContent = group.name;
+        genEl.textContent = data.generatedAt ? `Updated: ${data.generatedAt}` : '';
+
+        for (const p of group.photos) {
+          const card = document.createElement('div');
+          card.className = 'photo-card';
+
+          const a = document.createElement('a');
+          a.href = `/${p}`;
+          a.target = '_blank';
+          a.rel = 'noopener';
+
+          const img = document.createElement('img');
+          img.loading = 'lazy';
+          img.alt = group.name;
+          img.src = `/${p}`;
+
+          const bar = document.createElement('div');
+          bar.className = 'photo-bar';
+
+          const name = document.createElement('span');
+          name.className = 'photo-name';
+          name.textContent = p.split('/').slice(-1)[0];
+
+          const dl = document.createElement('a');
+          dl.href = `/${p}`;
+          dl.download = '';
+          dl.className = 'download';
+          dl.textContent = 'Download';
+
+          a.appendChild(img);
+          bar.appendChild(name);
+          bar.appendChild(dl);
+          card.appendChild(a);
+          card.appendChild(bar);
+          photosEl.appendChild(card);
+        }
+      });
+    </script>
+  </body>
+  </html>
+
