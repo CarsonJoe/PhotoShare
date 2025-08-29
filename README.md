@@ -45,3 +45,9 @@ Tip: Right‑click a photo to save, or click “Download” to trigger a downloa
 
 This is a public site. Anyone with the URL can view and download your images.
 
+
+## Thumbnails & Lightbox
+
+- `publish.bat` calls `app/generate_manifest.ps1`, which also creates JPEG thumbnails (~600px wide) under `photos/_thumbs/<album>/<name>.jpg` for faster gallery loading.
+- Album covers and grid images use these thumbnails; clicking an image opens a lightbox with next/prev controls that loads the original file in full resolution.
+- RAW files (e.g., `.RW2`) are currently ignored; export to JPEG/PNG to include them.

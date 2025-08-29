@@ -1,16 +1,25 @@
 ﻿{
-    "generatedAt":  "2025-08-28 21:39:54",
+    "generatedAt":  "2025-08-29 10:14:23",
+    "thumbWidth":  600,
     "groups":  [
                    {
                        "id":  "Jackson Hole S25\u0027",
                        "name":  "Jackson Hole S25\u0027",
                        "cover":  "photos/Jackson Hole S25\u0027/P1010997.JPG",
+                       "coverThumb":  "photos/_thumbs/Jackson Hole S25\u0027/P1010997.jpg",
                        "photos":  [
                                       "photos/Jackson Hole S25\u0027/P1010997.JPG",
                                       "photos/Jackson Hole S25\u0027/P1020016.JPG",
                                       "photos/Jackson Hole S25\u0027/P1020024.JPG",
                                       "photos/Jackson Hole S25\u0027/P1020025.JPG",
                                       "photos/Jackson Hole S25\u0027/P1020026.JPG"
+                                  ],
+                       "thumbs":  [
+                                      "photos/_thumbs/Jackson Hole S25\u0027/P1010997.jpg",
+                                      "photos/_thumbs/Jackson Hole S25\u0027/P1020016.jpg",
+                                      "photos/_thumbs/Jackson Hole S25\u0027/P1020024.jpg",
+                                      "photos/_thumbs/Jackson Hole S25\u0027/P1020025.jpg",
+                                      "photos/_thumbs/Jackson Hole S25\u0027/P1020026.jpg"
                                   ]
                    }
                ]

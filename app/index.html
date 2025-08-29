@@ -49,7 +49,8 @@
           const img = document.createElement('img');
           img.loading = 'lazy';
           img.alt = `${g.name} cover`;
-          img.src = g.cover ? `../${g.cover}` : 'placeholder.svg';
+          const coverSrc = g.coverThumb || g.cover;
+          img.src = coverSrc ? `../${coverSrc}` : 'placeholder.svg';
 
           const title = document.createElement('div');
           title.className = 'group-title';

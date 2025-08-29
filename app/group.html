@@ -24,6 +24,17 @@
       </section>
     </main>
 
+    <div id="lightbox" class="lightbox" hidden>
+      <button class="lb-btn lb-close" aria-label="Close">×</button>
+      <button class="lb-btn lb-prev" aria-label="Previous">‹</button>
+      <img id="lightboxImage" alt="Full size" />
+      <div class="lb-caption">
+        <span id="lbName"></span>
+        <a id="lbDownload" class="download" download>Download</a>
+      </div>
+      <button class="lb-btn lb-next" aria-label="Next">›</button>
+    </div>
+
     <footer class="site-footer">
       <span id="generatedAt"></span>
     </footer>
@@ -67,19 +78,25 @@
             return;
           }
 
-          for (const p of (group.photos || [])) {
+          // Build photo grid using thumbnails when available
+          for (let i = 0; i < (group.photos || []).length; i++) {
+            const p = group.photos[i];
+            const t = (group.thumbs && group.thumbs[i]) ? group.thumbs[i] : p;
             const card = document.createElement('div');
             card.className = 'photo-card';
 
             const a = document.createElement('a');
             a.href = `../${p}`;
-            a.target = '_blank';
             a.rel = 'noopener';
+            a.addEventListener('click', (e) => {
+              e.preventDefault();
+              openLightbox(i);
+            });
 
             const img = document.createElement('img');
             img.loading = 'lazy';
             img.alt = group.name || '';
-            img.src = `../${p}`;
+            img.src = `../${t}`;
 
             const bar = document.createElement('div');
             bar.className = 'photo-bar';
@@ -101,6 +118,44 @@
             card.appendChild(bar);
             photosEl.appendChild(card);
           }
+          // Lightbox setup
+          const lb = document.getElementById('lightbox');
+          const lbImg = document.getElementById('lightboxImage');
+          const lbName = document.getElementById('lbName');
+          const lbDl = document.getElementById('lbDownload');
+          const btnPrev = document.querySelector('.lb-prev');
+          const btnNext = document.querySelector('.lb-next');
+          const btnClose = document.querySelector('.lb-close');
+
+          let idx = 0;
+          function show(i){
+            idx = (i + group.photos.length) % group.photos.length;
+            const full = group.photos[idx];
+            lbImg.src = `../${full}`;
+            lbName.textContent = full.split('/').slice(-1)[0];
+            lbDl.href = `../${full}`;
+          }
+          window.openLightbox = (i) => {
+            lb.hidden = false;
+            document.body.style.overflow = 'hidden';
+            show(i);
+          };
+          function closeLb(){
+            lb.hidden = true;
+            document.body.style.overflow = '';
+            lbImg.src = '';
+          }
+          btnPrev.addEventListener('click', () => show(idx - 1));
+          btnNext.addEventListener('click', () => show(idx + 1));
+          btnClose.addEventListener('click', closeLb);
+          lb.addEventListener('click', (e) => { if (e.target === lb) closeLb(); });
+          window.addEventListener('keydown', (e) => {
+            if (lb.hidden) return;
+            if (e.key === 'Escape') closeLb();
+            if (e.key === 'ArrowLeft') show(idx - 1);
+            if (e.key === 'ArrowRight') show(idx + 1);
+          });
+
         } catch (err) {
           console.error('Error rendering group page:', err);
           const emptyEl = document.getElementById('emptyState');
