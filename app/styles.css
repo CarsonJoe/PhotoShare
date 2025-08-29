@@ -24,7 +24,7 @@ html,body{
 
 .site-footer{ padding:12px 24px; border-top:1px solid var(--border); color:var(--muted); font-size:12px; }
 
-.section-title{ margin:8px 0 16px; font-size:18px; }
+.section-title{ margin:8px 0 16px; font-size:18px; display: none; }
 
 .grid{ display:grid; gap:16px; }
 .groups-grid{ grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
