@@ -35,6 +35,7 @@
         <button id="btnDownload" class="btn primary" disabled>Download Selected (0)</button>
       </div>
     </div>
+    <div id="toast" class="toast" hidden role="status" aria-live="polite"></div>
 
     <div id="lightbox" class="lightbox" hidden>
       <button class="lb-btn lb-close" aria-label="Close">×</button>
@@ -96,6 +97,16 @@
           const btnShare = document.getElementById('btnShare');
           const btnDownload = document.getElementById('btnDownload');
           let shareSupported = false;
+          const toastEl = document.getElementById('toast');
+          let toastTimer = null;
+
+          function showToast(msg){
+            if (!toastEl) return;
+            if (toastTimer){ clearTimeout(toastTimer); toastTimer = null; }
+            toastEl.textContent = msg;
+            toastEl.hidden = false;
+            toastTimer = setTimeout(()=>{ toastEl.hidden = true; }, 2200);
+          }
 
           // Detect Web Share (files) support and toggle Share button visibility
           (function detectShareSupport(){
@@ -183,42 +194,11 @@
               if (navigator.canShare && navigator.canShare({ files })){
                 await navigator.share({ files, title: group.name || 'Photos' });
               } else {
-                // Fallback to downloads
-                let delay = 0;
-                for (const i of indices){
-                  const full = group.photos[i];
-                  const url = `../${full}`;
-                  const name = full.split('/').slice(-1)[0];
-                  setTimeout(()=>{
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = name;
-                    document.body.appendChild(a);
-                    a.click();
-                    a.remove();
-                  }, delay);
-                  delay += 150;
-                }
+                showToast('Failed to share');
               }
             }catch(err){
-              console.error('Share failed, falling back to download:', err);
-              // Fallback to downloads
-              const indices = Array.from(selected.values()).sort((a,b)=>a-b);
-              let delay = 0;
-              for (const i of indices){
-                const full = group.photos[i];
-                const url = `../${full}`;
-                const name = full.split('/').slice(-1)[0];
-                setTimeout(()=>{
-                  const a = document.createElement('a');
-                  a.href = url;
-                  a.download = name;
-                  document.body.appendChild(a);
-                  a.click();
-                  a.remove();
-                }, delay);
-                delay += 150;
-              }
+              console.error('Share failed:', err);
+              showToast('Failed to share');
             }
           });
 
