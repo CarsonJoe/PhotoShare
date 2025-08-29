@@ -36,58 +36,75 @@
       }
 
       window.addEventListener('DOMContentLoaded', async () => {
-        const data = await window.PhotoShare.loadManifest();
-        const id = getParam('g');
-        const group = data && data.groups ? data.groups.find(x => x.id === id) : null;
-        const photosEl = document.getElementById('photos');
-        const emptyEl = document.getElementById('emptyState');
-        const titleEl = document.getElementById('groupTitle');
-        const crumbEl = document.getElementById('groupCrumb');
-        const genEl = document.getElementById('generatedAt');
+        try {
+          const data = await window.PhotoShare.loadManifest();
+          const id = (getParam('g') || '').trim();
+          // Try to find by id first, then by name as a fallback (helps if ids/names mismatch)
+          let group = (data && Array.isArray(data.groups)) ? data.groups.find(x => x.id === id) : null;
+          if (!group && data && Array.isArray(data.groups)) {
+            group = data.groups.find(x => x.name === id);
+          }
 
-        if (!group) {
+          const photosEl = document.getElementById('photos');
+          const emptyEl = document.getElementById('emptyState');
+          const titleEl = document.getElementById('groupTitle');
+          const crumbEl = document.getElementById('groupCrumb');
+          const genEl = document.getElementById('generatedAt');
+
+          if (!group) {
+            if (emptyEl) emptyEl.hidden = false;
+            if (genEl) genEl.textContent = '';
+            return;
+          }
+
+          if (titleEl) titleEl.textContent = group.name || id;
+          if (crumbEl) crumbEl.textContent = group.name || id;
+          if (genEl) genEl.textContent = data.generatedAt ? `Updated: ${data.generatedAt}` : '';
+
+          if (!photosEl) {
+            // If container is missing, show empty state rather than crash
+            if (emptyEl) emptyEl.hidden = false;
+            return;
+          }
+
+          for (const p of (group.photos || [])) {
+            const card = document.createElement('div');
+            card.className = 'photo-card';
+
+            const a = document.createElement('a');
+            a.href = `../${p}`;
+            a.target = '_blank';
+            a.rel = 'noopener';
+
+            const img = document.createElement('img');
+            img.loading = 'lazy';
+            img.alt = group.name || '';
+            img.src = `../${p}`;
+
+            const bar = document.createElement('div');
+            bar.className = 'photo-bar';
+
+            const name = document.createElement('span');
+            name.className = 'photo-name';
+            name.textContent = p.split('/').slice(-1)[0];
+
+            const dl = document.createElement('a');
+            dl.href = `../${p}`;
+            dl.download = '';
+            dl.className = 'download';
+            dl.textContent = 'Download';
+
+            a.appendChild(img);
+            bar.appendChild(name);
+            bar.appendChild(dl);
+            card.appendChild(a);
+            card.appendChild(bar);
+            photosEl.appendChild(card);
+          }
+        } catch (err) {
+          console.error('Error rendering group page:', err);
+          const emptyEl = document.getElementById('emptyState');
           if (emptyEl) emptyEl.hidden = false;
-          if (genEl) genEl.textContent = '';
-          return;
-        }
-
-        if (titleEl) titleEl.textContent = group.name;
-        if (crumbEl) crumbEl.textContent = group.name;
-        if (genEl) genEl.textContent = data.generatedAt ? `Updated: ${data.generatedAt}` : '';
-
-        for (const p of group.photos) {
-          const card = document.createElement('div');
-          card.className = 'photo-card';
-
-          const a = document.createElement('a');
-          a.href = `../${p}`;
-          a.target = '_blank';
-          a.rel = 'noopener';
-
-          const img = document.createElement('img');
-          img.loading = 'lazy';
-          img.alt = group.name;
-          img.src = `../${p}`;
-
-          const bar = document.createElement('div');
-          bar.className = 'photo-bar';
-
-          const name = document.createElement('span');
-          name.className = 'photo-name';
-          name.textContent = p.split('/').slice(-1)[0];
-
-          const dl = document.createElement('a');
-          dl.href = `../${p}`;
-          dl.download = '';
-          dl.className = 'download';
-          dl.textContent = 'Download';
-
-          a.appendChild(img);
-          bar.appendChild(name);
-          bar.appendChild(dl);
-          card.appendChild(a);
-          card.appendChild(bar);
-          photosEl.appendChild(card);
         }
       });
     </script>
