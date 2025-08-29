@@ -36,10 +36,6 @@
       <button class="lb-btn lb-close" aria-label="Close">×</button>
       <button class="lb-btn lb-prev" aria-label="Previous">‹</button>
       <img id="lightboxImage" alt="Full size" />
-      <div class="lb-caption">
-        <span id="lbName"></span>
-        <a id="lbDownload" class="download" download>Download</a>
-      </div>
       <button class="lb-btn lb-next" aria-label="Next">›</button>
     </div>
 
@@ -218,8 +214,6 @@
           // Lightbox setup
           const lb = document.getElementById('lightbox');
           const lbImg = document.getElementById('lightboxImage');
-          const lbName = document.getElementById('lbName');
-          const lbDl = document.getElementById('lbDownload');
           const btnPrev = document.querySelector('.lb-prev');
           const btnNext = document.querySelector('.lb-next');
           const btnClose = document.querySelector('.lb-close');
@@ -229,8 +223,6 @@
             idx = (i + group.photos.length) % group.photos.length;
             const full = group.photos[idx];
             lbImg.src = `../${full}`;
-            lbName.textContent = full.split('/').slice(-1)[0];
-            lbDl.href = `../${full}`;
           }
           window.openLightbox = (i) => {
             lb.hidden = false;
