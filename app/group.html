@@ -20,6 +20,7 @@
         <div id="selectActions" class="actions" hidden>
           <button id="btnCancel" class="btn">Cancel</button>
           <button id="btnSelectAll" class="btn">Select All</button>
+          <button id="btnShare" class="btn" disabled>Share Selected (0)</button>
           <button id="btnDownload" class="btn primary" disabled>Download Selected (0)</button>
         </div>
       </div>
@@ -86,17 +87,23 @@
           let selectionMode = false;
           const selected = new Set();
           let lastSelectedIndex = null;
+          let suppressNextClick = false; // set true after long-press to swallow ensuing click
 
           const btnSelect = document.getElementById('btnSelect');
           const actions = document.getElementById('selectActions');
           const btnCancel = document.getElementById('btnCancel');
           const btnSelectAll = document.getElementById('btnSelectAll');
+          const btnShare = document.getElementById('btnShare');
           const btnDownload = document.getElementById('btnDownload');
 
           function updateToolbar(){
             const count = selected.size;
             btnDownload.textContent = `Download Selected (${count})`;
             btnDownload.disabled = count === 0;
+            if (btnShare){
+              btnShare.textContent = `Share Selected (${count})`;
+              btnShare.disabled = count === 0;
+            }
           }
 
           function enterSelect(){
@@ -146,6 +153,64 @@
             }
           });
 
+          btnShare.addEventListener('click', async ()=>{
+            if (!selected.size) return;
+            const indices = Array.from(selected.values()).sort((a,b)=>a-b);
+            const maxShare = 20; // keep memory reasonable on mobile
+            const slice = indices.slice(0, maxShare);
+            try{
+              const files = [];
+              for (const i of slice){
+                const full = group.photos[i];
+                const url = `../${full}`;
+                const name = full.split('/').slice(-1)[0];
+                const res = await fetch(url, { cache:'no-store' });
+                const blob = await res.blob();
+                const type = blob.type || 'image/jpeg';
+                files.push(new File([blob], name, { type }));
+              }
+              if (navigator.canShare && navigator.canShare({ files })){
+                await navigator.share({ files, title: group.name || 'Photos' });
+              } else {
+                // Fallback to downloads
+                let delay = 0;
+                for (const i of indices){
+                  const full = group.photos[i];
+                  const url = `../${full}`;
+                  const name = full.split('/').slice(-1)[0];
+                  setTimeout(()=>{
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = name;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                  }, delay);
+                  delay += 150;
+                }
+              }
+            }catch(err){
+              console.error('Share failed, falling back to download:', err);
+              // Fallback to downloads
+              const indices = Array.from(selected.values()).sort((a,b)=>a-b);
+              let delay = 0;
+              for (const i of indices){
+                const full = group.photos[i];
+                const url = `../${full}`;
+                const name = full.split('/').slice(-1)[0];
+                setTimeout(()=>{
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = name;
+                  document.body.appendChild(a);
+                  a.click();
+                  a.remove();
+                }, delay);
+                delay += 150;
+              }
+            }
+          });
+
           function setSelected(i, val){
             if (val) selected.add(i); else selected.delete(i);
             const card = document.querySelector(`.photo-card[data-index="${i}"]`);
@@ -168,6 +233,30 @@
             lastSelectedIndex = i;
           }
 
+          function attachLongPress(el, i){
+            let timer = null;
+            const start = (ev)=>{
+              // Only react to primary button / single touch
+              timer = setTimeout(()=>{
+                enterSelect();
+                handleSelectClick(i, ev instanceof PointerEvent ? (ev) : new MouseEvent('click'));
+                suppressNextClick = true;
+              }, 500);
+            };
+            const cancel = ()=>{ if (timer){ clearTimeout(timer); timer=null; } };
+            el.addEventListener('pointerdown', start);
+            el.addEventListener('pointerup', cancel);
+            el.addEventListener('pointerleave', cancel);
+            el.addEventListener('pointercancel', cancel);
+            // Fallbacks for older browsers
+            el.addEventListener('touchstart', start, { passive: true });
+            el.addEventListener('touchend', cancel);
+            el.addEventListener('touchcancel', cancel);
+            el.addEventListener('mousedown', start);
+            el.addEventListener('mouseup', cancel);
+            el.addEventListener('mouseleave', cancel);
+          }
+
           // Build photo grid using thumbnails when available
           for (let i = 0; i < (group.photos || []).length; i++) {
             const p = group.photos[i];
@@ -180,6 +269,11 @@
             a.href = `../${p}`;
             a.rel = 'noopener';
             a.addEventListener('click', (e) => {
+              if (suppressNextClick){
+                suppressNextClick = false;
+                e.preventDefault();
+                return;
+              }
               if (selectionMode) {
                 e.preventDefault();
                 handleSelectClick(i, e);
@@ -188,27 +282,15 @@
                 openLightbox(i);
               }
             });
+            attachLongPress(a, i);
 
             const img = document.createElement('img');
             img.loading = 'lazy';
             img.alt = group.name || '';
             img.src = `../${t}`;
 
-            const badge = document.createElement('button');
-            badge.type = 'button';
-            badge.className = 'select-badge';
-            badge.title = 'Select';
-            badge.textContent = '✓';
-            badge.addEventListener('click', (e)=>{
-              e.preventDefault();
-              e.stopPropagation();
-              if (!selectionMode) enterSelect();
-              handleSelectClick(i, e);
-            });
-
             a.appendChild(img);
             card.appendChild(a);
-            card.appendChild(badge);
             photosEl.appendChild(card);
           }
           // Lightbox setup
