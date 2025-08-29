@@ -37,6 +37,38 @@
     </div>
     <div id="toast" class="toast" hidden role="status" aria-live="polite"></div>
 
+    <!-- Share modal -->
+    <div id="shareModal" class="modal" hidden>
+      <div class="modal-backdrop"></div>
+      <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="shareTitle">
+        <h3 id="shareTitle">Prepare to Share</h3>
+        <p id="shareSubtitle" class="muted"></p>
+        <form id="shareForm" class="share-form">
+          <label class="radio">
+            <input type="radio" name="preset" value="large" checked />
+            <span>Large (~2048px)</span>
+          </label>
+          <label class="radio">
+            <input type="radio" name="preset" value="medium" />
+            <span>Medium (~1280px)</span>
+          </label>
+          <label class="radio">
+            <input type="radio" name="preset" value="small" />
+            <span>Small (~800px)</span>
+          </label>
+          <label class="radio">
+            <input type="radio" name="preset" value="original" />
+            <span>Original size</span>
+          </label>
+        </form>
+        <p id="shareNote" class="muted"></p>
+        <div class="modal-actions">
+          <button id="shareCancel" class="btn">Cancel</button>
+          <button id="shareConfirm" class="btn primary">Share</button>
+        </div>
+      </div>
+    </div>
+
     <div id="lightbox" class="lightbox" hidden>
       <button class="lb-btn lb-close" aria-label="Close">×</button>
       <button class="lb-btn lb-prev" aria-label="Previous">‹</button>
@@ -108,6 +140,44 @@
             toastTimer = setTimeout(()=>{ toastEl.hidden = true; }, 2200);
           }
 
+          // Share modal elements
+          const shareModal = document.getElementById('shareModal');
+          const shareForm = document.getElementById('shareForm');
+          const shareTitle = document.getElementById('shareTitle');
+          const shareSubtitle = document.getElementById('shareSubtitle');
+          const shareNote = document.getElementById('shareNote');
+          const shareCancel = document.getElementById('shareCancel');
+          const shareConfirm = document.getElementById('shareConfirm');
+
+          const SharePresets = {
+            original: { label:'Original', maxWidth:null, quality:0.92, maxCount:3 },
+            large: { label:'Large (~2048px)', maxWidth:2048, quality:0.9, maxCount:10 },
+            medium: { label:'Medium (~1280px)', maxWidth:1280, quality:0.85, maxCount:20 },
+            small: { label:'Small (~800px)', maxWidth:800, quality:0.8, maxCount:40 },
+          };
+
+          function getSelectedPreset(){
+            const fd = new FormData(shareForm);
+            const val = (fd.get('preset') || 'large').toString();
+            return SharePresets[val] || SharePresets.large;
+          }
+
+          function openShareModal(){
+            const count = selected.size;
+            const preset = getSelectedPreset();
+            shareSubtitle.textContent = `${count} photo${count===1?'':'s'} selected`;
+            shareNote.textContent = `On iOS, sharing large files can fail. You can share up to ${preset.maxCount} at this setting.`;
+            shareModal.hidden = false;
+          }
+          function closeShareModal(){
+            shareModal.hidden = true;
+          }
+          shareCancel.addEventListener('click', (e)=>{ e.preventDefault(); closeShareModal(); });
+          shareForm.addEventListener('change', ()=>{
+            const preset = getSelectedPreset();
+            shareNote.textContent = `On iOS, sharing large files can fail. You can share up to ${preset.maxCount} at this setting.`;
+          });
+
           // Detect Web Share (files) support and toggle Share button visibility
           (function detectShareSupport(){
             try{
@@ -175,30 +245,69 @@
             }
           });
 
-          btnShare.addEventListener('click', async ()=>{
+          btnShare.addEventListener('click', ()=>{
             if (!selected.size) return;
-            const indices = Array.from(selected.values()).sort((a,b)=>a-b);
-            const maxShare = 20; // keep memory reasonable on mobile
-            const slice = indices.slice(0, maxShare);
-            try{
-              const files = [];
-              for (const i of slice){
-                const full = group.photos[i];
-                const url = `../${full}`;
-                const name = full.split('/').slice(-1)[0];
+            if (!shareSupported){ showToast('Failed to share'); return; }
+            openShareModal();
+          });
+
+          async function downscaleToFile(url, name, maxWidth, quality){
+            const img = new Image();
+            img.decoding = 'async';
+            img.src = url;
+            await new Promise((res, rej)=>{ img.onload=res; img.onerror=()=>rej(new Error('Image load failed')); });
+            const iw = img.naturalWidth || img.width; const ih = img.naturalHeight || img.height;
+            let tw = iw; let th = ih;
+            if (maxWidth && iw > maxWidth){ const s = maxWidth / iw; tw = Math.round(iw * s); th = Math.round(ih * s); }
+            const canvas = document.createElement('canvas');
+            canvas.width = tw; canvas.height = th;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, tw, th);
+            const blob = await new Promise((res)=> canvas.toBlob(res, 'image/jpeg', quality));
+            const finalBlob = blob || new Blob();
+            const finalName = name.replace(/\.[^.]+$/, '') + (maxWidth ? `_${maxWidth}.jpg` : '');
+            return new File([finalBlob], finalName, { type: 'image/jpeg' });
+          }
+
+          async function prepareFilesForShare(indices, preset){
+            const files = [];
+            for (const i of indices){
+              const full = group.photos[i];
+              const url = `../${full}`;
+              const name = full.split('/').slice(-1)[0];
+              if (preset.maxWidth){
+                files.push(await downscaleToFile(url, name, preset.maxWidth, preset.quality));
+              } else {
                 const res = await fetch(url, { cache:'no-store' });
                 const blob = await res.blob();
                 const type = blob.type || 'image/jpeg';
                 files.push(new File([blob], name, { type }));
               }
+              // Yield to UI
+              await new Promise(r=>setTimeout(r));
+            }
+            return files;
+          }
+
+          shareConfirm.addEventListener('click', async (e)=>{
+            e.preventDefault();
+            const preset = getSelectedPreset();
+            const indices = Array.from(selected.values()).sort((a,b)=>a-b).slice(0, preset.maxCount);
+            if (!indices.length){ closeShareModal(); return; }
+            shareConfirm.disabled = true; shareConfirm.textContent = 'Preparing…';
+            try{
+              const files = await prepareFilesForShare(indices, preset);
               if (navigator.canShare && navigator.canShare({ files })){
-                await navigator.share({ files, title: group.name || 'Photos' });
+                await navigator.share({ files, title: headerTitleEl?.textContent || 'Photos' });
               } else {
                 showToast('Failed to share');
               }
-            }catch(err){
+            } catch(err){
               console.error('Share failed:', err);
               showToast('Failed to share');
+            } finally {
+              shareConfirm.disabled = false; shareConfirm.textContent = 'Share';
+              closeShareModal();
             }
           });
 
