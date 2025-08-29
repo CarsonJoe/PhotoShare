@@ -55,12 +55,14 @@ code{ background:var(--card); padding:2px 6px; border-radius:6px; border:1px sol
 /* Lightbox */
 .lightbox{ position:fixed; inset:0; background:rgba(0,0,0,0.92); display:flex; align-items:center; justify-content:center; z-index:100; padding:24px; }
 .lightbox[hidden]{ display:none; }
-.lightbox img{ max-width:95vw; max-height:85vh; box-shadow:0 10px 30px rgba(0,0,0,0.5); border-radius:8px; }
+.lightbox img{ max-width:95vw; max-height:85vh; box-shadow:0 10px 30px rgba(0,0,0,0.5); border-radius:8px; transition:filter .15s ease; }
+.lightbox img.is-thumb{ filter: blur(1.2px) saturate(0.95); }
 .lb-btn{ position:fixed; top:50%; transform:translateY(-50%); background:rgba(17,17,17,0.6); color:#fff; border:none; width:42px; height:42px; border-radius:999px; cursor:pointer; font-size:22px; display:flex; align-items:center; justify-content:center; user-select:none; }
 .lb-btn:hover{ background:rgba(17,17,17,0.8); }
 .lb-prev{ left:18px; }
 .lb-next{ right:18px; }
 .lb-close{ top:18px; right:18px; transform:none; font-size:26px; }
+.lb-progress{ position:fixed; left:50%; top:calc(50% + 50vh/2); transform:translateX(-50%); color:#e5e7eb; background:rgba(17,17,17,0.6); padding:6px 10px; border-radius:8px; border:1px solid rgba(229,231,235,0.2); font-size:12px; }
 
 /* Bottom action bar for selection */
 .bottom-bar{ position:fixed; left:0; right:0; bottom:0; transform:translateY(100%); transition:transform .18s ease; z-index:25; backdrop-filter:saturate(140%) blur(10px); -webkit-backdrop-filter:saturate(140%) blur(10px); background:linear-gradient(0deg, rgba(255,255,255,0.85), rgba(255,255,255,0.55)); border-top:1px solid rgba(229,231,235,0.6); }

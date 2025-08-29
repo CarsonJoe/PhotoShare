@@ -73,6 +73,7 @@
       <button class="lb-btn lb-close" aria-label="Close">×</button>
       <button class="lb-btn lb-prev" aria-label="Previous">‹</button>
       <img id="lightboxImage" alt="Full size" />
+      <div id="lbProgress" class="lb-progress" hidden>Loading…</div>
       <button class="lb-btn lb-next" aria-label="Next">›</button>
     </div>
 
@@ -366,15 +367,71 @@
           // Lightbox setup
           const lb = document.getElementById('lightbox');
           const lbImg = document.getElementById('lightboxImage');
+          const lbProgress = document.getElementById('lbProgress');
           const btnPrev = document.querySelector('.lb-prev');
           const btnNext = document.querySelector('.lb-next');
           const btnClose = document.querySelector('.lb-close');
 
           let idx = 0;
+          let loadToken = 0; // prevent stale image swaps
+          const fullCache = new Map(); // index -> HTMLImageElement
+
+          function setProgress(visible){ if (lbProgress) lbProgress.hidden = !visible; }
+
           function show(i){
             idx = (i + group.photos.length) % group.photos.length;
+            const token = ++loadToken;
             const full = group.photos[idx];
-            lbImg.src = `../${full}`;
+            const thumb = (group.thumbs && group.thumbs[idx]) ? group.thumbs[idx] : null;
+
+            // Stage 1: show thumb immediately (or blank) for instant switch
+            if (thumb) {
+              lbImg.classList.add('is-thumb');
+              lbImg.src = `../${thumb}`;
+            } else {
+              lbImg.classList.remove('is-thumb');
+              lbImg.src = '';
+            }
+            setProgress(true);
+
+            // Use cached full image if available and complete
+            const cached = fullCache.get(idx);
+            if (cached && cached.complete) {
+              if (token === loadToken) {
+                lbImg.classList.remove('is-thumb');
+                lbImg.src = cached.src;
+                setProgress(false);
+              }
+            } else {
+              // Stage 2: preload full and swap when ready
+              const img = new Image();
+              img.decoding = 'async';
+              img.src = `../${full}`;
+              fullCache.set(idx, img);
+              img.onload = () => {
+                if (token === loadToken) {
+                  lbImg.classList.remove('is-thumb');
+                  lbImg.src = img.src;
+                  setProgress(false);
+                }
+              };
+              img.onerror = () => {
+                if (token === loadToken) setProgress(false);
+              };
+            }
+
+            // Opportunistically preload neighbors
+            preloadNeighbor(idx + 1);
+            preloadNeighbor(idx - 1);
+          }
+
+          function preloadNeighbor(j){
+            const k = (j + group.photos.length) % group.photos.length;
+            if (fullCache.has(k)) return;
+            const img = new Image();
+            img.decoding = 'async';
+            img.src = `../${group.photos[k]}`;
+            fullCache.set(k, img);
           }
           window.openLightbox = (i) => {
             lb.hidden = false;
