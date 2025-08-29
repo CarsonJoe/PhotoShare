@@ -87,7 +87,6 @@
           let selectionMode = false;
           const selected = new Set();
           let lastSelectedIndex = null;
-          let suppressNextClick = false; // set true after long-press to swallow ensuing click
 
           const btnSelect = document.getElementById('btnSelect');
           const actions = document.getElementById('selectActions');
@@ -95,6 +94,20 @@
           const btnSelectAll = document.getElementById('btnSelectAll');
           const btnShare = document.getElementById('btnShare');
           const btnDownload = document.getElementById('btnDownload');
+          let shareSupported = false;
+
+          // Detect Web Share (files) support and toggle Share button visibility
+          (function detectShareSupport(){
+            try{
+              if (navigator && 'share' in navigator && 'canShare' in navigator && window.File && window.Blob){
+                const f = new File([new Blob(['x'], { type: 'image/jpeg' })], 'x.jpg', { type: 'image/jpeg' });
+                shareSupported = !!navigator.canShare({ files: [f] });
+              } else {
+                shareSupported = false;
+              }
+            } catch { shareSupported = false; }
+            if (btnShare){ btnShare.hidden = !shareSupported; }
+          })();
 
           function updateToolbar(){
             const count = selected.size;
@@ -233,30 +246,6 @@
             lastSelectedIndex = i;
           }
 
-          function attachLongPress(el, i){
-            let timer = null;
-            const start = (ev)=>{
-              // Only react to primary button / single touch
-              timer = setTimeout(()=>{
-                enterSelect();
-                handleSelectClick(i, ev instanceof PointerEvent ? (ev) : new MouseEvent('click'));
-                suppressNextClick = true;
-              }, 500);
-            };
-            const cancel = ()=>{ if (timer){ clearTimeout(timer); timer=null; } };
-            el.addEventListener('pointerdown', start);
-            el.addEventListener('pointerup', cancel);
-            el.addEventListener('pointerleave', cancel);
-            el.addEventListener('pointercancel', cancel);
-            // Fallbacks for older browsers
-            el.addEventListener('touchstart', start, { passive: true });
-            el.addEventListener('touchend', cancel);
-            el.addEventListener('touchcancel', cancel);
-            el.addEventListener('mousedown', start);
-            el.addEventListener('mouseup', cancel);
-            el.addEventListener('mouseleave', cancel);
-          }
-
           // Build photo grid using thumbnails when available
           for (let i = 0; i < (group.photos || []).length; i++) {
             const p = group.photos[i];
@@ -269,11 +258,6 @@
             a.href = `../${p}`;
             a.rel = 'noopener';
             a.addEventListener('click', (e) => {
-              if (suppressNextClick){
-                suppressNextClick = false;
-                e.preventDefault();
-                return;
-              }
               if (selectionMode) {
                 e.preventDefault();
                 handleSelectClick(i, e);
@@ -282,7 +266,6 @@
                 openLightbox(i);
               }
             });
-            attachLongPress(a, i);
 
             const img = document.createElement('img');
             img.loading = 'lazy';
