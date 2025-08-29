@@ -5,7 +5,7 @@ A minimal, no-build photo gallery: drop photos into folders under `photos/`, dou
 ## Structure
 
 - `app/` — static app (HTML/CSS/JS) and generated `photos.json`
-- `photos/` — your photo groups, one folder per group
+- `photos/` — your photo albums, one folder per album
 - `publish.bat` — generates manifest and pushes to Git
 - `.nojekyll` — created automatically to keep GitHub Pages from Jekyll processing
 
@@ -18,7 +18,7 @@ Example:
     img_002.jpg
 /app
   index.html
-  group.html
+  album.html
   main.js
   styles.css
 ```
@@ -31,7 +31,7 @@ Underscores in folder names are shown as spaces (e.g. `my_trip_2024` → `my tri
 2) Double‑click `publish.bat`.
    - Scans `photos/`, writes `app/photos.json`, commits, and pushes.
 3) Enable GitHub Pages (repo Settings → Pages → Deploy from branch: `main`, folder: `/ (root)`).
-4) Visit your Pages URL. `app/index.html` lists groups; click a group to view and download images.
+4) Visit your Pages URL. `app/index.html` lists albums; click a album to view and download images.
 
 Tip: Right‑click a photo to save, or click “Download” to trigger a download.
 
