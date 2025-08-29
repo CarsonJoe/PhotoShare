@@ -5,6 +5,9 @@ REM Determine repo root (folder of this script)
 set REPO_ROOT=%~dp0
 pushd "%REPO_ROOT%" >nul
 
+echo [0/3] Importing staged edits (if any)...
+powershell -NoProfile -ExecutionPolicy Bypass -File "%REPO_ROOT%app\import_staging.ps1"
+
 echo [1/3] Generating photo manifest...
 powershell -NoProfile -ExecutionPolicy Bypass -File "%REPO_ROOT%app\generate_manifest.ps1"
 if errorlevel 1 (

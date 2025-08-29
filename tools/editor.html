@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PhotoShare Local Editor</title>
+    <style>
+      :root{
+        --bg:#0b0c0f; --panel:#11151a; --muted:#9aa3af; --fg:#f3f4f6; --accent:#22c55e; --border:#1f2937;
+      }
+      *{box-sizing:border-box}
+      html,body{margin:0; padding:0; height:100%; background:var(--bg); color:var(--fg); font-family:system-ui,Segoe UI,Roboto,Inter,Arial}
+      .app{display:grid; grid-template-columns: 280px 1fr 300px; grid-template-rows:auto 1fr auto; height:100vh}
+      .viewer-mode.list-collapsed .app{ grid-template-columns: 1fr 300px; }
+      header{grid-column:1/-1; padding:10px 14px; display:flex; gap:10px; align-items:center; background:linear-gradient(180deg, rgba(17,21,26,0.85), rgba(17,21,26,0.65)); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:10; backdrop-filter:blur(8px)}
+      header h1{font-size:16px; margin:0; color:#e5e7eb}
+      header .spacer{flex:1}
+      .btn{appearance:none; border:1px solid var(--border); background:#0f172a; color:#e5e7eb; padding:8px 10px; border-radius:8px; cursor:pointer}
+      .btn.primary{background:var(--accent); color:#08110a; border-color:#16a34a; font-weight:600}
+      .btn:disabled{opacity:.6; cursor:not-allowed}
+      .left{border-right:1px solid var(--border); overflow:auto; background:var(--panel); display:flex; flex-direction:column}
+      .left .picker{display:flex; gap:8px; padding:10px; border-bottom:1px solid var(--border)}
+      .filelist{list-style:none; padding:8px; margin:0; display:flex; flex-direction:column; gap:4px}
+      .fileitem{display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 10px; border:1px solid var(--border); border-radius:8px; background:#0f1318; cursor:pointer}
+      .fileitem:hover{background:#0c1117}
+      .fileitem.active{outline:2px solid var(--accent); outline-offset:-2px}
+      .fileitem .name{white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+      .fileitem .badge{font-size:11px; color:#86efac}
+      .center{display:flex; align-items:center; justify-content:center; background:#0b0f14}
+      canvas{max-width:100%; max-height:100%; background:#0b0f14}
+      .right{border-left:1px solid var(--border); padding:12px; background:var(--panel); overflow:auto}
+      .field{margin:10px 0}
+      .field label{display:flex; justify-content:space-between; font-size:12px; color:var(--muted); margin-bottom:4px}
+      .field input[type=range]{width:100%}
+      footer{grid-column:1/-1; border-top:1px solid var(--border); padding:8px 12px; display:flex; gap:8px; align-items:center; background:var(--panel)}
+      .note{color:var(--muted); font-size:12px}
+      .ok{color:#86efac}
+      .warn{color:#fca5a5}
+      .viewer-only{display:none}
+      .viewer-mode .viewer-only{display:inline-flex}
+      .viewer-mode .list-only{display:none}
+      @media (max-width: 900px){
+        .viewer-mode .left{display:none}
+        .viewer-mode .app{grid-template-columns: 1fr 300px}
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <header>
+        <h1>PhotoShare Local Editor</h1>
+        <div class="spacer"></div>
+        <button id="btnOpenSrc" class="btn">Open Folder</button>
+        <button id="btnSetRepo" class="btn">Set Repo Folder</button>
+        <button id="btnBack" class="btn viewer-only">← Back</button>
+        <button id="btnToggleList" class="btn viewer-only">Toggle List</button>
+        <button id="btnPrev" class="btn viewer-only">‹ Prev</button>
+        <button id="btnNext" class="btn viewer-only">Next ›</button>
+        <button id="btnSave" class="btn primary viewer-only" disabled>Save This Image…</button>
+      </header>
+      <aside class="left">
+        <div class="picker">
+          <span class="note">Select a source folder to begin.</span>
+        </div>
+        <ul id="filelist" class="filelist"></ul>
+      </aside>
+      <main class="center">
+        <canvas id="canvas"></canvas>
+      </main>
+      <aside class="right">
+        <div class="field">
+          <label><span>Exposure</span><span id="v-exp">0</span></label>
+          <input id="exp" type="range" min="-100" max="100" value="0" />
+        </div>
+        <div class="field">
+          <label><span>Highlights</span><span id="v-high">0</span></label>
+          <input id="high" type="range" min="-100" max="100" value="0" />
+        </div>
+        <div class="field">
+          <label><span>Shadows</span><span id="v-shad">0</span></label>
+          <input id="shad" type="range" min="-100" max="100" value="0" />
+        </div>
+        <div class="field">
+          <label><span>Brightness</span><span id="v-bri">0</span></label>
+          <input id="bri" type="range" min="-100" max="100" value="0" />
+        </div>
+        <div class="field">
+          <label><span>Contrast</span><span id="v-con">0</span></label>
+          <input id="con" type="range" min="-100" max="100" value="0" />
+        </div>
+        <div class="field">
+          <label><span>Saturation</span><span id="v-sat">0</span></label>
+          <input id="sat" type="range" min="-100" max="100" value="0" />
+        </div>
+        <div class="field">
+          <label><span>Warmth</span><span id="v-warm">0</span></label>
+          <input id="warm" type="range" min="-100" max="100" value="0" />
+        </div>
+        <div class="field">
+          <label><span>Tint (G↔M)</span><span id="v-tint">0</span></label>
+          <input id="tint" type="range" min="-100" max="100" value="0" />
+        </div>
+        <hr style="border:0;border-top:1px solid var(--border);margin:12px 0" />
+        <div class="field">
+          <label><span>JPEG Quality</span><span id="v-qual">0.9</span></label>
+          <input id="qual" type="range" min="0.5" max="0.95" step="0.01" value="0.9" />
+        </div>
+        <div class="field">
+          <label><span>Histogram</span><span class="note">RGB</span></label>
+          <canvas id="histCanvas" width="260" height="100" style="width:100%;height:120px;background:#0b0f14;border:1px solid var(--border);border-radius:8px"></canvas>
+        </div>
+        <div class="note">Saves into <code>staging/&lt;Album&gt;/</code>. Run <code>publish.bat</code> to import and deploy.</div>
+      </aside>
+      <footer>
+        <span id="fsStatus" class="note">File System Access: <span id="fsAvail" class="warn">Not available</span></span>
+        <div class="spacer"></div>
+        <input id="album" class="btn" style="min-width:220px;background:#0b0f14" placeholder="Album name (e.g., Jackson Hole S25')" />
+      </footer>
+    </div>
+
+    <input id="fileInput" type="file" accept="image/*" multiple hidden />
+
+    <script>
+      const fileInput = document.getElementById('fileInput');
+      const fileListEl = document.getElementById('filelist');
+      const canvas = document.getElementById('canvas');
+      const ctx = canvas.getContext('2d');
+      const albumInput = document.getElementById('album');
+      const btnOpenSrc = document.getElementById('btnOpenSrc');
+      const btnSetRepo = document.getElementById('btnSetRepo');
+      const btnBack = document.getElementById('btnBack');
+      const btnPrev = document.getElementById('btnPrev');
+      const btnNext = document.getElementById('btnNext');
+      const btnSave = document.getElementById('btnSave');
+      const btnToggleList = document.getElementById('btnToggleList');
+      const fsAvailEl = document.getElementById('fsAvail');
+
+      const sliders = {
+        exp: document.getElementById('exp'),
+        high: document.getElementById('high'),
+        shad: document.getElementById('shad'),
+        bri: document.getElementById('bri'),
+        con: document.getElementById('con'),
+        sat: document.getElementById('sat'),
+        warm: document.getElementById('warm'),
+        tint: document.getElementById('tint'),
+        qual: document.getElementById('qual'),
+      };
+      const vals = {
+        exp: document.getElementById('v-exp'),
+        high: document.getElementById('v-high'),
+        shad: document.getElementById('v-shad'),
+        bri: document.getElementById('v-bri'),
+        con: document.getElementById('v-con'),
+        sat: document.getElementById('v-sat'),
+        warm: document.getElementById('v-warm'),
+        tint: document.getElementById('v-tint'),
+        qual: document.getElementById('v-qual'),
+      };
+
+      let srcDir = null; // DirectoryHandle
+      let repoRoot = null; // DirectoryHandle
+      let files = []; // { name, handle, saved:boolean, settings:{...} }
+      let idx = -1;
+
+      function fsAvailable(){ return 'showDirectoryPicker' in window; }
+      fsAvailEl.textContent = fsAvailable() ? 'Available' : 'Not available';
+      fsAvailEl.className = fsAvailable() ? 'ok' : 'warn';
+
+      function updateVals(){
+        vals.exp.textContent = sliders.exp.value;
+        vals.high.textContent = sliders.high.value;
+        vals.shad.textContent = sliders.shad.value;
+        vals.bri.textContent = sliders.bri.value;
+        vals.con.textContent = sliders.con.value;
+        vals.sat.textContent = sliders.sat.value;
+        vals.warm.textContent = sliders.warm.value;
+        vals.tint.textContent = sliders.tint.value;
+        vals.qual.textContent = sliders.qual.value;
+      }
+      updateVals();
+      Object.values(sliders).forEach(inEl => inEl.addEventListener('input', ()=>{ updateVals(); render(); }));
+
+      function pickActive(i){
+        idx = i;
+        document.querySelectorAll('.fileitem').forEach((el,k)=> el.classList.toggle('active', k===i));
+        document.body.classList.add('viewer-mode');
+        loadAndRenderCurrent();
+      }
+
+      function render(){
+        const it = files[idx];
+        if (!it) return;
+        const img = it._img;
+        if (!img) return;
+        const maxW = Math.min(window.innerWidth - 600, 1600);
+        const scale = Math.min(1, maxW / img.width, (window.innerHeight - 160) / img.height);
+        const w = Math.max(1, Math.round(img.width * scale));
+        const h = Math.max(1, Math.round(img.height * scale));
+        canvas.width = w; canvas.height = h;
+        // First draw base image with no filter
+        ctx.filter = 'none';
+        ctx.drawImage(img, 0, 0, w, h);
+
+        // Per-pixel adjustments
+        const exp = parseInt(sliders.exp.value, 10) / 100; // -1..1
+        const bri = parseInt(sliders.bri.value, 10) / 100; // -1..1
+        const con = parseInt(sliders.con.value, 10) / 100; // -1..1
+        const sat = parseInt(sliders.sat.value, 10) / 100; // -1..1
+        const warm = parseInt(sliders.warm.value, 10) / 100; // -1..1
+        const tint = parseInt(sliders.tint.value, 10) / 100; // -1..1
+        const high = parseInt(sliders.high.value, 10) / 100; // -1..1
+        const shad = parseInt(sliders.shad.value, 10) / 100; // -1..1
+
+        const imgData = ctx.getImageData(0,0,w,h);
+        const d = imgData.data;
+
+        const expFactor = Math.pow(2, exp*2); // ~±2 stops
+        const briFactor = 1 + bri; // multiplicative
+        const conFactor = 1 + con;
+        const warmR = 1 + 0.35 * warm;
+        const warmB = 1 - 0.35 * warm;
+        const tintG = tint < 0 ? 1 + 0.35 * (-tint) : 1 - 0.35 * tint;
+        const tintRB = tint > 0 ? 1 + 0.35 * tint : 1 - 0.35 * (-tint);
+        const satF = 1 + sat;
+
+        // Hist arrays
+        const hr = new Uint32Array(256);
+        const hg = new Uint32Array(256);
+        const hb = new Uint32Array(256);
+
+        for (let i=0;i<d.length;i+=4){
+          let r = d[i], g = d[i+1], b = d[i+2];
+
+          // Exposure
+          r *= expFactor; g *= expFactor; b *= expFactor;
+
+          // Warmth (R/B balance)
+          r *= warmR; b *= warmB;
+
+          // Tint (G↔Magenta)
+          if (tint >= 0){ r *= tintRB; b *= tintRB; g *= tintG; }
+          else { g *= tintG; r *= tintRB; b *= tintRB; }
+
+          // Saturation via lerp to luminance
+          const L = 0.2126*r + 0.7152*g + 0.0722*b; // 0..255
+          r = L + (r - L) * satF;
+          g = L + (g - L) * satF;
+          b = L + (b - L) * satF;
+
+          // Shadows/Highlights adjustments
+          const Ln = Math.max(0, Math.min(1, L/255));
+          if (shad !== 0){
+            const amt = 128 * shad; // +/- up to ~50
+            const boost = (1 - Ln) * amt;
+            r += boost; g += boost; b += boost;
+          }
+          if (high !== 0){
+            const amt = 128 * high;
+            const delta = (Ln) * amt;
+            r += delta; g += delta; b += delta;
+          }
+
+          // Contrast around mid-gray
+          r = (r - 128) * conFactor + 128;
+          g = (g - 128) * conFactor + 128;
+          b = (b - 128) * conFactor + 128;
+
+          // Brightness multiplicative
+          r *= briFactor; g *= briFactor; b *= briFactor;
+
+          // Clamp and write
+          r = r < 0 ? 0 : r > 255 ? 255 : r;
+          g = g < 0 ? 0 : g > 255 ? 255 : g;
+          b = b < 0 ? 0 : b > 255 ? 255 : b;
+
+          d[i] = r; d[i+1] = g; d[i+2] = b;
+
+          hr[r|0]++; hg[g|0]++; hb[b|0]++;
+        }
+        ctx.putImageData(imgData, 0, 0);
+
+        drawHistogram(hr,hg,hb);
+      }
+
+      function drawHistogram(hr,hg,hb){
+        const c = document.getElementById('histCanvas'); if (!c) return;
+        const ctx2 = c.getContext('2d');
+        const w = c.width, h = c.height;
+        ctx2.clearRect(0,0,w,h);
+        // find max for scaling
+        let max = 0; for (let i=0;i<256;i++){ const m = Math.max(hr[i],hg[i],hb[i]); if (m>max) max=m; }
+        if (max === 0) return;
+        function drawLine(hist, color){
+          ctx2.strokeStyle = color; ctx2.globalAlpha = 0.9; ctx2.lineWidth = 1;
+          ctx2.beginPath();
+          for (let x=0; x<256; x++){
+            const y = h - (hist[x] / max) * (h-2) - 1;
+            const px = Math.round(x * (w/256));
+            if (x===0) ctx2.moveTo(px,y); else ctx2.lineTo(px,y);
+          }
+          ctx2.stroke();
+        }
+        drawLine(hr,'#ef4444');
+        drawLine(hg,'#22c55e');
+        drawLine(hb,'#3b82f6');
+      }
+
+      async function chooseSourceFolder(){
+        if (!fsAvailable()){ alert('Use Chrome/Edge for folder access.'); return; }
+        srcDir = await window.showDirectoryPicker();
+        files = [];
+        for await (const entry of srcDir.values()){
+          if (entry.kind === 'file'){
+            const name = entry.name;
+            const ext = name.split('.').pop().toLowerCase();
+            if (['jpg','jpeg','png','gif','webp'].includes(ext)){
+              files.push({ name, handle: entry, saved:false, settings: { bri:0, con:0, sat:0, warm:0, qual:0.9 } });
+            }
+          }
+        }
+        files.sort((a,b)=> a.name.localeCompare(b.name));
+        renderList();
+        document.body.classList.remove('viewer-mode');
+      }
+
+      function renderList(){
+        fileListEl.innerHTML = '';
+        files.forEach((f,i)=>{
+          const li = document.createElement('li');
+          li.className = 'fileitem';
+          const name = document.createElement('div'); name.className = 'name'; name.textContent = f.name;
+          const badge = document.createElement('div'); badge.className = 'badge'; badge.textContent = f.saved ? '✓ saved' : '';
+          li.appendChild(name); li.appendChild(badge);
+          li.addEventListener('click', ()=> pickActive(i));
+          fileListEl.appendChild(li);
+        });
+      }
+
+      async function loadAndRenderCurrent(){
+        const it = files[idx]; if (!it) return;
+        // restore per-image settings
+        const s = it.settings || { exp:0, high:0, shad:0, bri:0, con:0, sat:0, warm:0, tint:0, qual:0.9 };
+        sliders.exp.value = s.exp; sliders.high.value = s.high; sliders.shad.value = s.shad; sliders.bri.value = s.bri; sliders.con.value = s.con; sliders.sat.value = s.sat; sliders.warm.value = s.warm; sliders.tint.value = s.tint; sliders.qual.value = s.qual;
+        updateVals();
+        const file = await it.handle.getFile();
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.src = url; await img.decode().catch(()=>{});
+        it._img = img;
+        render();
+        btnSave.disabled = false;
+      }
+
+      async function saveCurrentTo(handle){
+        const it = files[idx];
+        if (!it) return;
+        const quality = parseFloat(sliders.qual.value);
+        const nameNoExt = it.name.replace(/\.[^.]+$/, '');
+        const filename = nameNoExt + '.jpg';
+        const fileHandle = await handle.getFileHandle(filename, { create:true });
+        const writable = await fileHandle.createWritable();
+        const blob = await new Promise(res=> canvas.toBlob(res, 'image/jpeg', quality));
+        await writable.write(blob);
+        await writable.close();
+        it.saved = true;
+        it.settings = {
+          exp: parseInt(sliders.exp.value,10),
+          high: parseInt(sliders.high.value,10),
+          shad: parseInt(sliders.shad.value,10),
+          bri: parseInt(sliders.bri.value,10),
+          con: parseInt(sliders.con.value,10),
+          sat: parseInt(sliders.sat.value,10),
+          warm: parseInt(sliders.warm.value,10),
+          tint: parseInt(sliders.tint.value,10),
+          qual: parseFloat(sliders.qual.value),
+        };
+        renderList();
+      }
+
+      async function saveAll(){
+        if (!fsAvailable()) { alert('Your browser does not support File System Access API (use Chrome/Edge).'); return; }
+        if (!files.length) return;
+        const album = (albumInput.value || '').trim();
+        if (!album){ alert('Enter an album name.'); return; }
+        const root = repoRoot || await window.showDirectoryPicker();
+        repoRoot = root;
+        const staging = await (await root.getDirectoryHandle('staging', { create:true })).getDirectoryHandle(album, { create:true });
+        await saveCurrentTo(staging);
+        alert('Saved this image to staging/' + album + '. Run publish.bat to import and deploy.');
+      }
+
+      btnSave.addEventListener('click', saveAll);
+      btnOpenSrc.addEventListener('click', chooseSourceFolder);
+      btnSetRepo.addEventListener('click', async ()=>{ repoRoot = await window.showDirectoryPicker(); alert('Repo folder set.'); });
+      btnBack.addEventListener('click', ()=>{ document.body.classList.remove('viewer-mode'); });
+      btnToggleList.addEventListener('click', ()=>{ document.body.classList.toggle('list-collapsed'); });
+      btnPrev.addEventListener('click', ()=>{ if (idx>0) pickActive(idx-1); });
+      btnNext.addEventListener('click', ()=>{ if (idx<files.length-1) pickActive(idx+1); });
+      window.addEventListener('keydown', (e)=>{
+        if (document.body.classList.contains('viewer-mode')){
+          if (e.key==='ArrowLeft') btnPrev.click();
+          if (e.key==='ArrowRight') btnNext.click();
+        }
+      });
+      window.addEventListener('resize', render);
+    </script>
+  </body>
+  </html>
