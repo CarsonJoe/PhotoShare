@@ -106,6 +106,15 @@
           <input id="qual" type="range" min="0.5" max="0.95" step="0.01" value="0.9" />
         </div>
         <div class="field">
+          <label><span>Export Size</span><span id="v-expsize">Original</span></label>
+          <select id="expsize">
+            <option value="original">Original</option>
+            <option value="4096">4096 px</option>
+            <option value="2048">2048 px</option>
+            <option value="1280">1280 px</option>
+          </select>
+        </div>
+        <div class="field">
           <label><span>Histogram</span><span class="note">RGB</span></label>
           <canvas id="histCanvas" width="260" height="100" style="width:100%;height:120px;background:#0b0f14;border:1px solid var(--border);border-radius:8px"></canvas>
         </div>
@@ -134,6 +143,8 @@
       const btnSave = document.getElementById('btnSave');
       const btnToggleList = document.getElementById('btnToggleList');
       const fsAvailEl = document.getElementById('fsAvail');
+      const expSizeSel = document.getElementById('expsize');
+      const vExpSize = document.getElementById('v-expsize');
 
       const sliders = {
         exp: document.getElementById('exp'),
@@ -177,15 +188,61 @@
         vals.warm.textContent = sliders.warm.value;
         vals.tint.textContent = sliders.tint.value;
         vals.qual.textContent = sliders.qual.value;
+        vExpSize.textContent = expSizeSel.value === 'original' ? 'Original' : (expSizeSel.value + ' px');
       }
       updateVals();
       Object.values(sliders).forEach(inEl => inEl.addEventListener('input', ()=>{ updateVals(); render(); }));
+      expSizeSel.addEventListener('change', ()=>{ updateVals(); });
 
       function pickActive(i){
         idx = i;
         document.querySelectorAll('.fileitem').forEach((el,k)=> el.classList.toggle('active', k===i));
         document.body.classList.add('viewer-mode');
         loadAndRenderCurrent();
+      }
+
+      function getCurrentSettings(){
+        return {
+          exp: parseInt(sliders.exp.value, 10) / 100,
+          bri: parseInt(sliders.bri.value, 10) / 100,
+          con: parseInt(sliders.con.value, 10) / 100,
+          sat: parseInt(sliders.sat.value, 10) / 100,
+          warm: parseInt(sliders.warm.value, 10) / 100,
+          tint: parseInt(sliders.tint.value, 10) / 100,
+          high: parseInt(sliders.high.value, 10) / 100,
+          shad: parseInt(sliders.shad.value, 10) / 100,
+        };
+      }
+
+      function applyAdjustmentsToContext(ctx, w, h, settings){
+        const imgData = ctx.getImageData(0,0,w,h);
+        const d = imgData.data;
+        const expFactor = Math.pow(2, settings.exp*2);
+        const briFactor = 1 + settings.bri;
+        const conFactor = 1 + settings.con;
+        const warmR = 1 + 0.35 * settings.warm;
+        const warmB = 1 - 0.35 * settings.warm;
+        const tintG = settings.tint < 0 ? 1 + 0.35 * (-settings.tint) : 1 - 0.35 * settings.tint;
+        const tintRB = settings.tint > 0 ? 1 + 0.35 * settings.tint : 1 - 0.35 * (-settings.tint);
+        const satF = 1 + settings.sat;
+        const hr = new Uint32Array(256), hg = new Uint32Array(256), hb = new Uint32Array(256);
+        for (let i=0;i<d.length;i+=4){
+          let r = d[i], g = d[i+1], b = d[i+2];
+          r *= expFactor; g *= expFactor; b *= expFactor;
+          r *= warmR; b *= warmB;
+          if (settings.tint >= 0){ r *= tintRB; b *= tintRB; g *= tintG; } else { g *= tintG; r *= tintRB; b *= tintRB; }
+          const L = 0.2126*r + 0.7152*g + 0.0722*b;
+          r = L + (r - L) * satF; g = L + (g - L) * satF; b = L + (b - L) * satF;
+          const Ln = Math.max(0, Math.min(1, L/255));
+          if (settings.shad !== 0){ const amt = 128 * settings.shad; const boost = (1 - Ln) * amt; r += boost; g += boost; b += boost; }
+          if (settings.high !== 0){ const amt = 128 * settings.high; const delta = (Ln) * amt; r += delta; g += delta; b += delta; }
+          r = (r - 128) * conFactor + 128; g = (g - 128) * conFactor + 128; b = (b - 128) * conFactor + 128;
+          r *= briFactor; g *= briFactor; b *= briFactor;
+          r = r < 0 ? 0 : r > 255 ? 255 : r; g = g < 0 ? 0 : g > 255 ? 255 : g; b = b < 0 ? 0 : b > 255 ? 255 : b;
+          d[i]=r; d[i+1]=g; d[i+2]=b; hr[r|0]++; hg[g|0]++; hb[b|0]++;
+        }
+        ctx.putImageData(imgData,0,0);
+        return { hr,hg,hb };
       }
 
       function render(){
@@ -198,88 +255,11 @@
         const w = Math.max(1, Math.round(img.width * scale));
         const h = Math.max(1, Math.round(img.height * scale));
         canvas.width = w; canvas.height = h;
-        // First draw base image with no filter
+        ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
         ctx.filter = 'none';
         ctx.drawImage(img, 0, 0, w, h);
-
-        // Per-pixel adjustments
-        const exp = parseInt(sliders.exp.value, 10) / 100; // -1..1
-        const bri = parseInt(sliders.bri.value, 10) / 100; // -1..1
-        const con = parseInt(sliders.con.value, 10) / 100; // -1..1
-        const sat = parseInt(sliders.sat.value, 10) / 100; // -1..1
-        const warm = parseInt(sliders.warm.value, 10) / 100; // -1..1
-        const tint = parseInt(sliders.tint.value, 10) / 100; // -1..1
-        const high = parseInt(sliders.high.value, 10) / 100; // -1..1
-        const shad = parseInt(sliders.shad.value, 10) / 100; // -1..1
-
-        const imgData = ctx.getImageData(0,0,w,h);
-        const d = imgData.data;
-
-        const expFactor = Math.pow(2, exp*2); // ~±2 stops
-        const briFactor = 1 + bri; // multiplicative
-        const conFactor = 1 + con;
-        const warmR = 1 + 0.35 * warm;
-        const warmB = 1 - 0.35 * warm;
-        const tintG = tint < 0 ? 1 + 0.35 * (-tint) : 1 - 0.35 * tint;
-        const tintRB = tint > 0 ? 1 + 0.35 * tint : 1 - 0.35 * (-tint);
-        const satF = 1 + sat;
-
-        // Hist arrays
-        const hr = new Uint32Array(256);
-        const hg = new Uint32Array(256);
-        const hb = new Uint32Array(256);
-
-        for (let i=0;i<d.length;i+=4){
-          let r = d[i], g = d[i+1], b = d[i+2];
-
-          // Exposure
-          r *= expFactor; g *= expFactor; b *= expFactor;
-
-          // Warmth (R/B balance)
-          r *= warmR; b *= warmB;
-
-          // Tint (G↔Magenta)
-          if (tint >= 0){ r *= tintRB; b *= tintRB; g *= tintG; }
-          else { g *= tintG; r *= tintRB; b *= tintRB; }
-
-          // Saturation via lerp to luminance
-          const L = 0.2126*r + 0.7152*g + 0.0722*b; // 0..255
-          r = L + (r - L) * satF;
-          g = L + (g - L) * satF;
-          b = L + (b - L) * satF;
-
-          // Shadows/Highlights adjustments
-          const Ln = Math.max(0, Math.min(1, L/255));
-          if (shad !== 0){
-            const amt = 128 * shad; // +/- up to ~50
-            const boost = (1 - Ln) * amt;
-            r += boost; g += boost; b += boost;
-          }
-          if (high !== 0){
-            const amt = 128 * high;
-            const delta = (Ln) * amt;
-            r += delta; g += delta; b += delta;
-          }
-
-          // Contrast around mid-gray
-          r = (r - 128) * conFactor + 128;
-          g = (g - 128) * conFactor + 128;
-          b = (b - 128) * conFactor + 128;
-
-          // Brightness multiplicative
-          r *= briFactor; g *= briFactor; b *= briFactor;
-
-          // Clamp and write
-          r = r < 0 ? 0 : r > 255 ? 255 : r;
-          g = g < 0 ? 0 : g > 255 ? 255 : g;
-          b = b < 0 ? 0 : b > 255 ? 255 : b;
-
-          d[i] = r; d[i+1] = g; d[i+2] = b;
-
-          hr[r|0]++; hg[g|0]++; hb[b|0]++;
-        }
-        ctx.putImageData(imgData, 0, 0);
-
+        const settings = getCurrentSettings();
+        const { hr,hg,hb } = applyAdjustmentsToContext(ctx, w, h, settings);
         drawHistogram(hr,hg,hb);
       }
 
@@ -342,6 +322,7 @@
         // restore per-image settings
         const s = it.settings || { exp:0, high:0, shad:0, bri:0, con:0, sat:0, warm:0, tint:0, qual:0.9 };
         sliders.exp.value = s.exp; sliders.high.value = s.high; sliders.shad.value = s.shad; sliders.bri.value = s.bri; sliders.con.value = s.con; sliders.sat.value = s.sat; sliders.warm.value = s.warm; sliders.tint.value = s.tint; sliders.qual.value = s.qual;
+        if (s.expsize) { expSizeSel.value = s.expsize; }
         updateVals();
         const file = await it.handle.getFile();
         const url = URL.createObjectURL(file);
@@ -352,6 +333,15 @@
         btnSave.disabled = false;
       }
 
+      function getExportDims(img){
+        const opt = expSizeSel.value;
+        if (opt === 'original') return { w: img.naturalWidth || img.width, h: img.naturalHeight || img.height };
+        const maxW = parseInt(opt, 10);
+        const iw = img.naturalWidth || img.width; const ih = img.naturalHeight || img.height;
+        if (iw <= maxW) return { w: iw, h: ih };
+        const s = maxW / iw; return { w: Math.round(iw*s), h: Math.round(ih*s) };
+      }
+
       async function saveCurrentTo(handle){
         const it = files[idx];
         if (!it) return;
@@ -360,7 +350,16 @@
         const filename = nameNoExt + '.jpg';
         const fileHandle = await handle.getFileHandle(filename, { create:true });
         const writable = await fileHandle.createWritable();
-        const blob = await new Promise(res=> canvas.toBlob(res, 'image/jpeg', quality));
+        const img = it._img; if (!img) return;
+        const { w:tw, h:th } = getExportDims(img);
+        const off = document.createElement('canvas'); off.width = tw; off.height = th;
+        const octx = off.getContext('2d');
+        octx.imageSmoothingEnabled = true; octx.imageSmoothingQuality = 'high';
+        octx.filter = 'none';
+        octx.drawImage(img, 0, 0, tw, th);
+        const settings = getCurrentSettings();
+        applyAdjustmentsToContext(octx, tw, th, settings);
+        const blob = await new Promise(res=> off.toBlob(res, 'image/jpeg', quality));
         await writable.write(blob);
         await writable.close();
         it.saved = true;
@@ -374,6 +373,7 @@
           warm: parseInt(sliders.warm.value,10),
           tint: parseInt(sliders.tint.value,10),
           qual: parseFloat(sliders.qual.value),
+          expsize: expSizeSel.value,
         };
         renderList();
       }
