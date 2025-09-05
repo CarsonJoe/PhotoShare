@@ -12,6 +12,8 @@ function Ensure-Dir([string]$p){
 
 # Load System.Drawing for image processing (Windows-only)
 Add-Type -AssemblyName System.Drawing
+# Also load WIC metadata APIs for GPS (PresentationCore)
+try { Add-Type -AssemblyName PresentationCore, WindowsBase } catch {}
 
 function Get-JpegCodec() {
   return [System.Drawing.Imaging.ImageCodecInfo]::GetImageEncoders() | Where-Object { $_.MimeType -eq 'image/jpeg' }
@@ -77,6 +79,74 @@ function Ensure-Thumbnail([string]$srcPath, [string]$dstPath, [int]$maxWidth){
   }
 }
 
+function To-URational([byte[]]$bytes, [int]$offset){
+  $num = [BitConverter]::ToUInt32($bytes, $offset)
+  $den = [BitConverter]::ToUInt32($bytes, $offset + 4)
+  if ($den -eq 0) { return 0 }
+  return [double]$num / [double]$den
+}
+
+function From-DMS([double[]]$dms, [string]$ref){
+  if ($dms.Count -lt 3) { return $null }
+  $deg = $dms[0]; $min = $dms[1]; $sec = $dms[2]
+  $val = $deg + ($min/60.0) + ($sec/3600.0)
+  if ($ref -in @('S','W')) { $val = -$val }
+  return $val
+}
+
+function Try-GetGps-SystemDrawing([string]$path){
+  try{
+    $img = [System.Drawing.Image]::FromFile($path)
+    $idLatRef = 0x0001; $idLat = 0x0002; $idLonRef = 0x0003; $idLon = 0x0004
+    if (-not ($img.PropertyIdList -contains $idLat -and $img.PropertyIdList -contains $idLon)) { $img.Dispose(); return $null }
+    $latRef = [System.Text.Encoding]::ASCII.GetString($img.GetPropertyItem($idLatRef).Value).Trim([char]0)
+    $lonRef = [System.Text.Encoding]::ASCII.GetString($img.GetPropertyItem($idLonRef).Value).Trim([char]0)
+    $latVal = $img.GetPropertyItem($idLat).Value
+    $lonVal = $img.GetPropertyItem($idLon).Value
+    $img.Dispose()
+    $lat = @(
+      To-URational $latVal 0,
+      To-URational $latVal 8,
+      To-URational $latVal 16
+    )
+    $lon = @(
+      To-URational $lonVal 0,
+      To-URational $lonVal 8,
+      To-URational $lonVal 16
+    )
+    $dlat = From-DMS $lat $latRef
+    $dlon = From-DMS $lon $lonRef
+    if ($dlat -and $dlon) { return @{ lat=$dlat; lon=$dlon } }
+  } catch {}
+  return $null
+}
+
+function Try-GetGps-WIC([string]$path){
+  try{
+    $fs = [System.IO.File]::OpenRead($path)
+    try{
+      $decoder = [System.Windows.Media.Imaging.BitmapDecoder]::Create($fs, [System.Windows.Media.Imaging.BitmapCreateOptions]::IgnoreColorProfile, [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad)
+      $frame = $decoder.Frames[0]
+      $meta = [System.Windows.Media.Imaging.BitmapMetadata]$frame.Metadata
+      if (-not $meta) { return $null }
+      $latRef = $meta.GetQuery('/app1/ifd/gps/{ushort=1}')
+      $latArr = $meta.GetQuery('/app1/ifd/gps/{ushort=2}')
+      $lonRef = $meta.GetQuery('/app1/ifd/gps/{ushort=3}')
+      $lonArr = $meta.GetQuery('/app1/ifd/gps/{ushort=4}')
+      if (-not $latArr -or -not $lonArr) { return $null }
+      # Arrays of rationals: each element has Numerator and Denominator
+      $latD = @()
+      foreach($r in $latArr){ $latD += ([double]$r.Numerator / [double][math]::Max(1,$r.Denominator)) }
+      $lonD = @()
+      foreach($r in $lonArr){ $lonD += ([double]$r.Numerator / [double][math]::Max(1,$r.Denominator)) }
+      $dlat = From-DMS $latD ([string]$latRef)
+      $dlon = From-DMS $lonD ([string]$lonRef)
+      if ($dlat -and $dlon) { return @{ lat=$dlat; lon=$dlon } }
+    } finally { $fs.Dispose() }
+  } catch {}
+  return $null
+}
+
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $repoRoot = Resolve-Path (Join-Path $scriptDir '..')
 $photosDir = Join-Path $repoRoot 'photos'
@@ -90,6 +160,7 @@ $allowed = @('.jpg','.jpeg','.png','.gif','.webp','.JPG','.JPEG','.PNG','.GIF','
 $maxThumbWidth = 600
 
 $groups = @()
+$locations = @()
 Get-ChildItem -Path $photosDir -Directory | Where-Object { $_.Name -ne '_thumbs' } | ForEach-Object {
   $group = $_
   $files = Get-ChildItem -Path $group.FullName -File | Where-Object { $allowed -contains $_.Extension } | Sort-Object Name
@@ -103,6 +174,22 @@ Get-ChildItem -Path $photosDir -Directory | Where-Object { $_.Name -ne '_thumbs'
     Ensure-Thumbnail -srcPath $f.FullName -dstPath $thumbPath -maxWidth $maxThumbWidth
     $thumbRel = ToWebPath ($thumbPath.Substring($repoRoot.Path.Length + 1))
     $relThumbs += $thumbRel
+
+    # Attempt GPS extraction for JPEGs only (EXIF)
+    if ($f.Extension -match '^(?i)\.jpe?g$') {
+      $gps = Try-GetGps-SystemDrawing $f.FullName
+      if (-not $gps) { $gps = Try-GetGps-WIC $f.FullName }
+      if ($gps -and $gps.lat -and $gps.lon) {
+        $locations += [PSCustomObject]@{
+          groupId = $group.Name
+          name = $f.Name
+          path = (ToWebPath $rel)
+          thumb = $thumbRel
+          lat = [Math]::Round([double]$gps.lat, 6)
+          lon = [Math]::Round([double]$gps.lon, 6)
+        }
+      }
+    }
   }
   $cover = if ($relPhotos.Count -gt 0) { $relPhotos[0] } else { $null }
   $coverThumb = if ($relThumbs.Count -gt 0) { $relThumbs[0] } else { $null }
@@ -120,6 +207,7 @@ $manifest = [PSCustomObject]@{
   generatedAt = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
   thumbWidth = $maxThumbWidth
   groups = $groups
+  locations = $locations
 }
 
 $json = $manifest | ConvertTo-Json -Depth 5

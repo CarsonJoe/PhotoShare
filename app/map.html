@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Photo Map</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <style>
+      #map{ position:fixed; inset:56px 0 0 0; }
+      .leaflet-popup-content { margin: 8px; }
+      .pm-thumb{ display:block; width:180px; height:120px; object-fit:cover; border-radius:6px; }
+      .pm-title{ margin-top:6px; font-size:12px; color:#6b7280; }
+      .badge{ background:#111; color:#fff; padding:2px 6px; border-radius:6px; font-size:11px; }
+    </style>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="header-left">
+        <a class="back-link" href="index.html" aria-label="Back">←</a>
+        <h1 class="site-title"><a href="index.html">Carson's Photos</a></h1>
+      </div>
+      <div class="header-center">Map</div>
+      <div class="header-right"></div>
+    </header>
+    <div id="map"></div>
+    <script src="./main.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script>
+      async function init(){
+        const data = await window.PhotoShare.loadManifest();
+        const locs = Array.isArray(data.locations) ? data.locations : [];
+        const hasAny = locs.length > 0;
+        const map = L.map('map');
+        const tiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        if (!hasAny){
+          map.setView([39.5, -98.35], 4); // USA fallback
+          return;
+        }
+
+        const markers = [];
+        const bounds = [];
+        for (const p of locs){
+          if (typeof p.lat !== 'number' || typeof p.lon !== 'number') continue;
+          const m = L.marker([p.lat, p.lon]).addTo(map);
+          const name = (p.name || '').replace(/</g,'&lt;');
+          const thumb = p.thumb ? '../' + p.thumb : '';
+          const href = p.path ? ('../' + p.path) : '#';
+          const html = `
+            <a href="${href}" target="_blank" rel="noopener">
+              ${thumb ? `<img class="pm-thumb" src="${thumb}" alt="${name}">` : ''}
+              <div class="pm-title">${name}</div>
+            </a>`;
+          m.bindPopup(html);
+          markers.push(m);
+          bounds.push([p.lat, p.lon]);
+        }
+        if (bounds.length){ map.fitBounds(bounds, { padding:[40,40] }); }
+      }
+      init();
+    </script>
+  </body>
+  </html>
+

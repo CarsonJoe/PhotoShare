@@ -51,3 +51,12 @@ This is a public site. Anyone with the URL can view and download your images.
 - `publish.bat` calls `app/generate_manifest.ps1`, which also creates JPEG thumbnails (~600px wide) under `photos/_thumbs/<album>/<name>.jpg` for faster gallery loading.
 - Album covers and grid images use these thumbnails; clicking an image opens a lightbox with next/prev controls that loads the original file in full resolution.
 - RAW files (e.g., `.RW2`) are currently ignored; export to JPEG/PNG to include them.
+
+## Map View (GPS)
+
+- New `app/map.html` plots photos with GPS on a Leaflet map (OpenStreetMap tiles).
+- `app/generate_manifest.ps1` tries to extract EXIF GPS from JPEGs and writes a `locations` array to `app/photos.json`.
+- Requirements/notes:
+  - Works best for JPEGs with GPS EXIF (e.g., most phones/cameras when location is enabled).
+  - RAW/PNG typically don’t carry GPS; those will not be mapped.
+  - If no photos have GPS, the map opens to a default view.
