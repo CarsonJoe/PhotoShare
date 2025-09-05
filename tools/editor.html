@@ -26,8 +26,10 @@
       .fileitem.active{outline:2px solid var(--accent); outline-offset:-2px}
       .fileitem .name{white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
       .fileitem .badge{font-size:11px; color:#86efac}
-      .center{display:flex; align-items:center; justify-content:center; background:#0b0f14}
-      canvas{max-width:100%; max-height:100%; background:#0b0f14}
+      .center{position:relative; display:flex; align-items:center; justify-content:center; background:#0b0f14}
+      canvas{display:block; width:100%; height:100%; background:#0b0f14}
+      .lens{ position:absolute; width:220px; height:220px; border-radius:999px; border:2px solid rgba(255,255,255,0.7); box-shadow:0 8px 24px rgba(0,0,0,0.35); overflow:hidden; pointer-events:none; display:none; }
+      .lens canvas{ width:100%; height:100%; display:block }
       .right{border-left:1px solid var(--border); padding:12px; background:var(--panel); overflow:auto}
       .field{margin:10px 0}
       .field label{display:flex; justify-content:space-between; font-size:12px; color:var(--muted); margin-bottom:4px}
@@ -53,6 +55,8 @@
         <button id="btnOpenSrc" class="btn">Open Folder</button>
         <button id="btnSetRepo" class="btn">Set Repo Folder</button>
         <button id="btnBack" class="btn viewer-only">← Back</button>
+        <button id="btnFit" class="btn viewer-only">Fit</button>
+        <button id="btnOne" class="btn viewer-only">1:1</button>
         <button id="btnToggleList" class="btn viewer-only">Toggle List</button>
         <button id="btnPrev" class="btn viewer-only">‹ Prev</button>
         <button id="btnNext" class="btn viewer-only">Next ›</button>
@@ -66,6 +70,7 @@
       </aside>
       <main class="center">
         <canvas id="canvas"></canvas>
+        <div id="zoomLens" class="lens"><canvas id="lensCanvas" width="220" height="220"></canvas></div>
       </main>
       <aside class="right">
         <div class="field">
@@ -134,6 +139,9 @@
       const fileListEl = document.getElementById('filelist');
       const canvas = document.getElementById('canvas');
       const ctx = canvas.getContext('2d');
+      const lens = document.getElementById('zoomLens');
+      const lensCanvas = document.getElementById('lensCanvas');
+      const lensCtx = lensCanvas.getContext('2d');
       const albumInput = document.getElementById('album');
       const btnOpenSrc = document.getElementById('btnOpenSrc');
       const btnSetRepo = document.getElementById('btnSetRepo');
@@ -173,6 +181,10 @@
       let repoRoot = null; // DirectoryHandle
       let files = []; // { name, handle, saved:boolean, settings:{...} }
       let idx = -1;
+      let zoom = 1; // canvas pixels per image pixel
+      let fitMode = true;
+      let view = { x:0, y:0 }; // top-left in image px
+      const maxPreviewPixels = 4_000_000; // safety cap for preview canvas size
 
       function fsAvailable(){ return 'showDirectoryPicker' in window; }
       fsAvailEl.textContent = fsAvailable() ? 'Available' : 'Not available';
@@ -245,21 +257,60 @@
         return { hr,hg,hb };
       }
 
+      function getContainerSize(){
+        const rect = canvas.parentElement.getBoundingClientRect();
+        return { w: Math.max(1, Math.floor(rect.width)), h: Math.max(1, Math.floor(rect.height)) };
+      }
+
+      function ensureViewInBounds(img){
+        const { w:vw, h:vh } = getContainerSize();
+        const srcW = vw / zoom; const srcH = vh / zoom;
+        const maxX = Math.max(0, (img.width  - srcW));
+        const maxY = Math.max(0, (img.height - srcH));
+        if (view.x < 0) view.x = 0; if (view.y < 0) view.y = 0;
+        if (view.x > maxX) view.x = maxX; if (view.y > maxY) view.y = maxY;
+      }
+
+      function setFitZoom(img){
+        const { w:vw, h:vh } = getContainerSize();
+        const zx = vw / img.width; const zy = vh / img.height;
+        zoom = Math.min(zx, zy);
+        fitMode = true;
+        view.x = Math.max(0, (img.width  - vw/zoom) / 2);
+        view.y = Math.max(0, (img.height - vh/zoom) / 2);
+      }
+
       function render(){
         const it = files[idx];
         if (!it) return;
         const img = it._img;
         if (!img) return;
-        const maxW = Math.min(window.innerWidth - 600, 1600);
-        const scale = Math.min(1, maxW / img.width, (window.innerHeight - 160) / img.height);
-        const w = Math.max(1, Math.round(img.width * scale));
-        const h = Math.max(1, Math.round(img.height * scale));
-        canvas.width = w; canvas.height = h;
+        const dpr = window.devicePixelRatio || 1;
+        const { w:vw, h:vh } = getContainerSize();
+        // Cap canvas pixels for performance; adjust zoom if needed
+        const targetPixels = vw*vh*dpr*dpr;
+        if (targetPixels > maxPreviewPixels){
+          const scale = Math.sqrt(maxPreviewPixels / targetPixels);
+          canvas.width = Math.max(1, Math.floor(vw*dpr*scale));
+          canvas.height= Math.max(1, Math.floor(vh*dpr*scale));
+        } else {
+          canvas.width = Math.max(1, Math.floor(vw*dpr));
+          canvas.height= Math.max(1, Math.floor(vh*dpr));
+        }
+        canvas.style.width = vw + 'px';
+        canvas.style.height = vh + 'px';
+
+        ensureViewInBounds(img);
+        const srcW = canvas.width / (zoom * dpr);
+        const srcH = canvas.height / (zoom * dpr);
+        const sx = Math.max(0, Math.min(img.width - srcW, view.x));
+        const sy = Math.max(0, Math.min(img.height - srcH, view.y));
+
         ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
         ctx.filter = 'none';
-        ctx.drawImage(img, 0, 0, w, h);
+        ctx.drawImage(img, sx, sy, srcW, srcH, 0, 0, canvas.width, canvas.height);
         const settings = getCurrentSettings();
-        const { hr,hg,hb } = applyAdjustmentsToContext(ctx, w, h, settings);
+        const { hr,hg,hb } = applyAdjustmentsToContext(ctx, canvas.width, canvas.height, settings);
         drawHistogram(hr,hg,hb);
       }
 
@@ -329,6 +380,8 @@
         const img = new Image();
         img.src = url; await img.decode().catch(()=>{});
         it._img = img;
+        // Set fit zoom when opening a new image
+        setFitZoom(img);
         render();
         btnSave.disabled = false;
       }
@@ -394,6 +447,8 @@
       btnOpenSrc.addEventListener('click', chooseSourceFolder);
       btnSetRepo.addEventListener('click', async ()=>{ repoRoot = await window.showDirectoryPicker(); alert('Repo folder set.'); });
       btnBack.addEventListener('click', ()=>{ document.body.classList.remove('viewer-mode'); });
+      btnFit.addEventListener('click', ()=>{ const it=files[idx]; if (it && it._img){ setFitZoom(it._img); render(); }});
+      btnOne.addEventListener('click', ()=>{ const it=files[idx]; if (it && it._img){ fitMode=false; zoom=1; view.x=0; view.y=0; render(); }});
       btnToggleList.addEventListener('click', ()=>{ document.body.classList.toggle('list-collapsed'); });
       btnPrev.addEventListener('click', ()=>{ if (idx>0) pickActive(idx-1); });
       btnNext.addEventListener('click', ()=>{ if (idx<files.length-1) pickActive(idx+1); });
@@ -404,6 +459,72 @@
         }
       });
       window.addEventListener('resize', render);
+
+      // Mouse interactions: pan & zoom
+      let dragging = false; let last = { x:0, y:0 };
+      canvas.addEventListener('mousedown', (e)=>{ dragging=true; last.x=e.clientX; last.y=e.clientY; });
+      window.addEventListener('mouseup', ()=> dragging=false);
+      window.addEventListener('mousemove', (e)=>{
+        if (dragging){
+          const dpr = window.devicePixelRatio||1;
+          const dx = (e.clientX - last.x); const dy = (e.clientY - last.y);
+          view.x -= dx / (zoom); view.y -= dy / (zoom);
+          last.x = e.clientX; last.y = e.clientY; render();
+        }
+      });
+      canvas.addEventListener('wheel', (e)=>{
+        e.preventDefault();
+        const it = files[idx]; if (!it || !it._img) return;
+        const { w:vw, h:vh } = getContainerSize();
+        const rect = canvas.getBoundingClientRect();
+        const cx = (e.clientX - rect.left) / vw; // 0..1
+        const cy = (e.clientY - rect.top) / vh; // 0..1
+        const oldZoom = zoom;
+        const delta = Math.sign(e.deltaY) * -0.1; // invert trackpad dir
+        zoom = Math.max(0.1, Math.min(8, zoom * (1 + delta)));
+        fitMode = false;
+        // Keep cursor anchored
+        const dpr = window.devicePixelRatio||1;
+        const srcWOld = canvas.width / (oldZoom * dpr);
+        const srcHOld = canvas.height/ (oldZoom * dpr);
+        const srcWNew = canvas.width / (zoom * dpr);
+        const srcHNew = canvas.height/ (zoom * dpr);
+        const focusX = view.x + srcWOld * cx;
+        const focusY = view.y + srcHOld * cy;
+        view.x = focusX - srcWNew * cx;
+        view.y = focusY - srcHNew * cy;
+        render();
+      }, { passive:false });
+
+      // Hover zoom lens
+      canvas.addEventListener('mousemove', (e)=>{
+        const it = files[idx]; if (!it || !it._img) return;
+        const img = it._img;
+        const rect = canvas.getBoundingClientRect();
+        const { w:vw, h:vh } = getContainerSize();
+        const dpr = window.devicePixelRatio||1;
+        const srcW = canvas.width / (zoom * dpr);
+        const srcH = canvas.height/ (zoom * dpr);
+        const sx = view.x; const sy = view.y;
+        const mx = e.clientX - rect.left; const my = e.clientY - rect.top;
+        const px = sx + (mx / vw) * srcW; // image coords
+        const py = sy + (my / vh) * srcH;
+        const lensSize = 220; const lensZoom = 2.5;
+        const ls = Math.floor(lensSize * (window.devicePixelRatio||1));
+        lensCanvas.width = ls; lensCanvas.height = ls;
+        const lw = lensSize; const lh = lensSize;
+        const srcBox = lensSize / lensZoom / (vw / srcW); // in image px taking into account current zoom
+        const sx0 = Math.max(0, Math.min(img.width - srcBox, px - srcBox/2));
+        const sy0 = Math.max(0, Math.min(img.height- srcBox, py - srcBox/2));
+        lensCtx.imageSmoothingEnabled = true; lensCtx.imageSmoothingQuality = 'high';
+        lensCtx.clearRect(0,0,ls,ls);
+        lensCtx.drawImage(img, sx0, sy0, srcBox, srcBox, 0, 0, ls, ls);
+        applyAdjustmentsToContext(lensCtx, ls, ls, getCurrentSettings());
+        lens.style.left = (mx - lw/2) + 'px';
+        lens.style.top  = (my - lh/2) + 'px';
+        lens.style.display = 'block';
+      });
+      canvas.addEventListener('mouseleave', ()=>{ lens.style.display = 'none'; });
     </script>
   </body>
   </html>
