@@ -1,7 +1,39 @@
 ﻿{
-    "generatedAt":  "2025-09-04 23:28:18",
+    "generatedAt":  "2025-09-14 11:34:20",
     "thumbWidth":  600,
     "groups":  [
+                   {
+                       "id":  "Colorado S25\u0027",
+                       "name":  "Colorado S25\u0027",
+                       "cover":  "photos/Colorado S25\u0027/P1020289.jpg",
+                       "coverThumb":  "photos/_thumbs/Colorado S25\u0027/P1020289.jpg",
+                       "photos":  [
+                                      "photos/Colorado S25\u0027/P1020289.jpg",
+                                      "photos/Colorado S25\u0027/P1020293.jpg",
+                                      "photos/Colorado S25\u0027/P1020294.jpg",
+                                      "photos/Colorado S25\u0027/P1020299.jpg",
+                                      "photos/Colorado S25\u0027/P1020320.jpg",
+                                      "photos/Colorado S25\u0027/P1020341.jpg",
+                                      "photos/Colorado S25\u0027/P1020354.jpg",
+                                      "photos/Colorado S25\u0027/P1020372.jpg",
+                                      "photos/Colorado S25\u0027/P1020392.jpg",
+                                      "photos/Colorado S25\u0027/P1020395.jpg",
+                                      "photos/Colorado S25\u0027/P1020411.jpg"
+                                  ],
+                       "thumbs":  [
+                                      "photos/_thumbs/Colorado S25\u0027/P1020289.jpg",
+                                      "photos/_thumbs/Colorado S25\u0027/P1020293.jpg",
+                                      "photos/_thumbs/Colorado S25\u0027/P1020294.jpg",
+                                      "photos/_thumbs/Colorado S25\u0027/P1020299.jpg",
+                                      "photos/_thumbs/Colorado S25\u0027/P1020320.jpg",
+                                      "photos/_thumbs/Colorado S25\u0027/P1020341.jpg",
+                                      "photos/_thumbs/Colorado S25\u0027/P1020354.jpg",
+                                      "photos/_thumbs/Colorado S25\u0027/P1020372.jpg",
+                                      "photos/_thumbs/Colorado S25\u0027/P1020392.jpg",
+                                      "photos/_thumbs/Colorado S25\u0027/P1020395.jpg",
+                                      "photos/_thumbs/Colorado S25\u0027/P1020411.jpg"
+                                  ]
+                   },
                    {
                        "id":  "Glacier S25\u0027",
                        "name":  "Glacier S25\u0027",
