@@ -63,7 +63,10 @@
     try {
       const res = await fetch(url, { cache: 'no-cache' });
       if (!res.ok) throw new Error(`Failed to load manifest: ${res.status}`);
-      const data = await res.json();
+      // Strip UTF-8 BOM if present — PowerShell emits BOM-prefixed UTF-8 by
+      // default. Chrome's JSON parser ignores it; Safari's throws a SyntaxError.
+      const text = (await res.text()).replace(/^\uFEFF/, '');
+      const data = JSON.parse(text);
       data.groups = Array.isArray(data.groups) ? data.groups.map(normalizeGroup) : [];
       data.groups.sort((a, b) => a.name.localeCompare(b.name));
       return data;
@@ -137,12 +140,24 @@
           }
         }
       },
-      { threshold: 0.12, rootMargin: '0px 0px -8% 0px' }
+      // threshold:0 + no negative rootMargin avoids a Safari quirk where
+      // percentage-based rootMargin misfires with the dynamic address bar.
+      { threshold: 0, rootMargin: '0px' }
     );
 
     elements.forEach((element) => {
       if (!element.classList.contains('is-visible')) observer.observe(element);
     });
+
+    // Safety-net: if IO hasn't fired within 400ms (can happen on Safari on
+    // first paint), force-reveal any elements still hidden.
+    setTimeout(() => {
+      elements.forEach((element) => {
+        if (!element.classList.contains('is-visible')) {
+          element.classList.add('is-visible');
+        }
+      });
+    }, 400);
   }
 
   function attachImageLoadState(card, img) {
