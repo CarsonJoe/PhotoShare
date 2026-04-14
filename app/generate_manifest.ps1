@@ -27,14 +27,12 @@ function Get-ThumbPath([string]$thumbsRoot, [IO.FileInfo]$srcFile, [string]$grou
 }
 
 function Ensure-Thumbnail([string]$srcPath, [string]$dstPath, [int]$maxWidth){
+  $img = $null
+  $thumb = $null
+  $g = $null
   try{
     $srcInfo = Get-Item -LiteralPath $srcPath -ErrorAction Stop
     $dstExists = Test-Path -LiteralPath $dstPath
-    if ($dstExists) {
-      $dstInfo = Get-Item -LiteralPath $dstPath
-      if ($dstInfo.LastWriteTimeUtc -ge $srcInfo.LastWriteTimeUtc) { return }
-    }
-
     $img = [System.Drawing.Image]::FromFile($srcPath)
 
     # Apply EXIF orientation when present
@@ -50,32 +48,49 @@ function Ensure-Thumbnail([string]$srcPath, [string]$dstPath, [int]$maxWidth){
       }
     }
 
-    $origW = [double]$img.Width
-    $origH = [double]$img.Height
+    $origW = [int]$img.Width
+    $origH = [int]$img.Height
     $scale = if ($origW -gt $maxWidth) { $maxWidth / $origW } else { 1.0 }
     $newW = [int][Math]::Round($origW * $scale)
     $newH = [int][Math]::Round($origH * $scale)
 
-    $thumb = New-Object System.Drawing.Bitmap $newW, $newH
-    $g = [System.Drawing.Graphics]::FromImage($thumb)
-    $g.CompositingQuality = [System.Drawing.Drawing2D.CompositingQuality]::HighQuality
-    $g.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
-    $g.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::HighQuality
-    $g.PixelOffsetMode = [System.Drawing.Drawing2D.PixelOffsetMode]::HighQuality
-    $g.DrawImage($img, 0, 0, $newW, $newH)
-    $g.Dispose()
+    $needsWrite = $true
+    if ($dstExists) {
+      $dstInfo = Get-Item -LiteralPath $dstPath
+      $needsWrite = $dstInfo.LastWriteTimeUtc -lt $srcInfo.LastWriteTimeUtc
+    }
 
-    $jpeg = Get-JpegCodec
-    $enc = [System.Drawing.Imaging.Encoder]::Quality
-    $eps = New-Object System.Drawing.Imaging.EncoderParameters 1
-    $ep = New-Object System.Drawing.Imaging.EncoderParameter $enc, ([long]80)
-    $eps.Param[0] = $ep
+    if ($needsWrite) {
+      $thumb = New-Object System.Drawing.Bitmap $newW, $newH
+      $g = [System.Drawing.Graphics]::FromImage($thumb)
+      $g.CompositingQuality = [System.Drawing.Drawing2D.CompositingQuality]::HighQuality
+      $g.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
+      $g.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::HighQuality
+      $g.PixelOffsetMode = [System.Drawing.Drawing2D.PixelOffsetMode]::HighQuality
+      $g.DrawImage($img, 0, 0, $newW, $newH)
 
-    $thumb.Save($dstPath, $jpeg, $eps)
-    $thumb.Dispose()
-    $img.Dispose()
+      $jpeg = Get-JpegCodec
+      $enc = [System.Drawing.Imaging.Encoder]::Quality
+      $eps = New-Object System.Drawing.Imaging.EncoderParameters 1
+      $ep = New-Object System.Drawing.Imaging.EncoderParameter $enc, ([long]80)
+      $eps.Param[0] = $ep
+
+      $thumb.Save($dstPath, $jpeg, $eps)
+    }
+
+    return [PSCustomObject]@{
+      width = $origW
+      height = $origH
+      thumbWidth = $newW
+      thumbHeight = $newH
+    }
   } catch {
     Write-Warning ("Failed to create thumbnail for {0}: {1}" -f $srcPath, $_.Exception.Message)
+    return $null
+  } finally {
+    if ($g) { $g.Dispose() }
+    if ($thumb) { $thumb.Dispose() }
+    if ($img) { $img.Dispose() }
   }
 }
 
@@ -98,14 +113,23 @@ Get-ChildItem -Path $photosDir -Directory | Where-Object { $_.Name -ne '_thumbs'
   $files = Get-ChildItem -Path $group.FullName -File | Where-Object { $allowed -contains $_.Extension } | Sort-Object Name
   $relPhotos = @()
   $relThumbs = @()
+  $items = @()
   foreach($f in $files){
     $rel = Join-Path 'photos' (Join-Path $group.Name $f.Name)
     $relPhotos += (ToWebPath $rel)
 
     $thumbPath = Get-ThumbPath -thumbsRoot $thumbsDir -srcFile $f -groupName $group.Name
-    Ensure-Thumbnail -srcPath $f.FullName -dstPath $thumbPath -maxWidth $maxThumbWidth
+    $meta = Ensure-Thumbnail -srcPath $f.FullName -dstPath $thumbPath -maxWidth $maxThumbWidth
     $thumbRel = ToWebPath ($thumbPath.Substring($repoRoot.Path.Length + 1))
     $relThumbs += $thumbRel
+
+    $items += [PSCustomObject]@{
+      src = (ToWebPath $rel)
+      thumb = $thumbRel
+      name = [System.IO.Path]::GetFileNameWithoutExtension($f.Name)
+      width = if ($meta) { $meta.width } else { $null }
+      height = if ($meta) { $meta.height } else { $null }
+    }
 
   }
   $cover = if ($relPhotos.Count -gt 0) { $relPhotos[0] } else { $null }
@@ -117,6 +141,7 @@ Get-ChildItem -Path $photosDir -Directory | Where-Object { $_.Name -ne '_thumbs'
     coverThumb = $coverThumb
     photos = $relPhotos
     thumbs = $relThumbs
+    items = $items
   }
 }
 
@@ -124,8 +149,9 @@ $manifest = [PSCustomObject]@{
   generatedAt = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
   thumbWidth = $maxThumbWidth
   groups = $groups
+  locations = @()
 }
 
-$json = $manifest | ConvertTo-Json -Depth 5
+$json = $manifest | ConvertTo-Json -Depth 6
 Set-Content -Path $manifestPath -Value $json -Encoding UTF8
 Write-Host "Wrote manifest to" (Resolve-Path $manifestPath)

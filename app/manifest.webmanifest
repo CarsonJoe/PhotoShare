@@ -1,0 +1,19 @@
+{
+  "name": "Carson's Photos",
+  "short_name": "Photos",
+  "description": "A private photo archive with fullscreen browsing and offline shell support.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ece5da",
+  "theme_color": "#f4eee4",
+  "icons": [
+    {
+      "src": "./app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

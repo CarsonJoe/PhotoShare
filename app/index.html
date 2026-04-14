@@ -3,23 +3,28 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f4eee4" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <title>Carson's Photos</title>
+    <link rel="icon" href="app-icon.svg" type="image/svg+xml" />
+    <link rel="manifest" href="manifest.webmanifest" />
     <link rel="stylesheet" href="styles.css" />
   </head>
-  <body>
-    <header class="site-header">
+  <body class="page-home" aria-busy="true">
+
+    <header class="site-header shell" data-reveal>
       <div class="header-left">
         <h1 class="site-title">Carson's Photos</h1>
       </div>
-      <div class="header-center"></div>
+      <div class="header-center" id="headerMeta"></div>
       <div class="header-right"></div>
     </header>
 
     <main class="container">
-      <section>
-        <h2 class="section-title">Albums</h2>
-        <div id="groups" class="grid groups-grid" aria-live="polite"></div>
-        <div id="emptyState" class="empty" hidden>
+      <section class="section-shell" data-reveal>
+        <div id="groups" class="groups-grid" aria-live="polite"></div>
+        <div id="emptyState" class="empty shell" hidden>
           <p>No photo albums found. Add folders under <code>/photos</code> and run <code>publish.bat</code>.</p>
         </div>
       </section>
@@ -32,39 +37,73 @@
     <script src="./main.js"></script>
     <script>
       window.addEventListener('DOMContentLoaded', async () => {
-        const data = await window.PhotoShare.loadManifest();
+        const { PhotoShare } = window;
         const groupsEl = document.getElementById('groups');
         const emptyEl = document.getElementById('emptyState');
         const genEl = document.getElementById('generatedAt');
 
-        if (!data || !data.groups || data.groups.length === 0) {
+        PhotoShare.setBusyState(true, 'Loading archive...');
+        PhotoShare.renderSkeletons(groupsEl, { count: 6, kind: 'group' });
+        PhotoShare.revealElements(document);
+
+        const data = await PhotoShare.loadManifest();
+        const groups = (data && Array.isArray(data.groups) ? data.groups : []).filter(
+          (group) => group.items && group.items.length
+        );
+
+        if (!groups.length) {
+          groupsEl.innerHTML = '';
           emptyEl.hidden = false;
           genEl.textContent = '';
+          PhotoShare.setBusyState(false, 'Archive ready');
+          PhotoShare.revealElements(document);
           return;
         }
 
-        genEl.textContent = data.generatedAt ? `Updated: ${data.generatedAt}` : '';
+        genEl.textContent = data.generatedAt
+          ? `Updated ${PhotoShare.formatTimestamp(data.generatedAt, { includeTime: true })}`
+          : '';
 
-        for (const g of data.groups) {
-          const a = document.createElement('a');
-          a.className = 'group-card';
-          a.href = `group.html?g=${encodeURIComponent(g.id)}`;
+        groupsEl.innerHTML = '';
+
+        for (const [index, group] of groups.entries()) {
+          const card = document.createElement('a');
+          card.className = 'group-card';
+          card.href = `group.html?g=${encodeURIComponent(group.id)}`;
+
+          const media = document.createElement('div');
+          media.className = 'group-card-media';
 
           const img = document.createElement('img');
-          img.loading = 'lazy';
-          img.alt = `${g.name} cover`;
-          const coverSrc = g.coverThumb || g.cover;
-          img.src = coverSrc ? `../${coverSrc}` : 'placeholder.svg';
+          img.loading = index < 3 ? 'eager' : 'lazy';
+          img.decoding = 'async';
+          img.fetchPriority = index < 3 ? 'high' : 'auto';
+          img.alt = `${group.name} cover`;
+          img.src = PhotoShare.relativeAsset(group.coverThumb || group.cover);
 
-          const title = document.createElement('div');
-          title.className = 'group-title';
-          title.textContent = `${g.name} (${g.photos.length})`;
+          const body = document.createElement('div');
+          body.className = 'group-card-body';
 
-          a.appendChild(img);
-          a.appendChild(title);
-          groupsEl.appendChild(a);
+          const copy = document.createElement('div');
+          copy.className = 'group-card-copy';
+
+          const title = document.createElement('h3');
+          title.className = 'group-card-title';
+          title.textContent = group.name;
+
+          const meta = document.createElement('p');
+          meta.className = 'group-card-meta';
+          meta.textContent = `${group.items.length} frame${group.items.length === 1 ? '' : 's'}`;
+
+          copy.append(title, meta);
+          body.append(copy);
+          media.append(img);
+          card.append(media, body);
+          groupsEl.appendChild(card);
         }
+
+        PhotoShare.setBusyState(false, 'Archive ready');
       });
     </script>
   </body>
-  </html>
+</html>

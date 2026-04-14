@@ -3,26 +3,38 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f4eee4" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <title>Carson's Photos</title>
+    <link rel="icon" href="app-icon.svg" type="image/svg+xml" />
+    <link rel="manifest" href="manifest.webmanifest" />
     <link rel="stylesheet" href="styles.css" />
   </head>
-  <body>
-    <header class="site-header">
+  <body class="page-group is-loading" aria-busy="true">
+    <div id="pageStatus" class="page-status" role="status" aria-live="polite">Loading album...</div>
+
+    <header class="site-header shell" data-reveal>
       <div class="header-left">
-        <a class="back-link" href="index.html" aria-label="Back">←</a>
-        <h1 class="site-title"><a href="index.html">Carson's Photos</a></h1>
+        <a class="back-link" href="index.html" aria-label="Back to albums">Back</a>
       </div>
-      <div class="header-center" id="groupHeaderTitle"></div>
+      <div class="header-center" id="groupHeaderTitle">Loading album</div>
       <div class="header-right">
-        <button id="btnSelectHeader" class="btn header-btn">Select</button>
+        <button id="btnSelectHeader" class="btn header-btn" type="button">Select</button>
       </div>
     </header>
 
     <main class="container">
-      <section>
-        <h2 id="groupTitle" class="section-title"></h2>
-        <div id="photos" class="grid photos-grid" aria-live="polite"></div>
-        <div id="emptyState" class="empty" hidden>
+      <section class="hero shell hero-group" data-reveal>
+        <div class="hero-copy hero-copy-minimal">
+          <h2 id="groupTitle" class="hero-title album-title">Loading...</h2>
+          <p class="hero-meta-line" id="galleryMeta">0 photos / Pending</p>
+        </div>
+      </section>
+
+      <section class="section-shell gallery-shell" data-reveal>
+        <div id="photos" class="photos-grid" aria-live="polite"></div>
+        <div id="emptyState" class="empty shell" hidden>
           <p>Album not found or has no photos.</p>
         </div>
       </section>
@@ -30,14 +42,31 @@
 
     <div class="bottom-bar" id="bottomBar" aria-live="polite">
       <div class="bottom-inner">
-        <button id="btnSelectAll" class="btn">Select All</button>
-        <button id="btnShare" class="btn" hidden disabled>Share Selected (0)</button>
-        <button id="btnDownload" class="btn primary" disabled>Download Selected (0)</button>
+        <div class="bottom-summary">
+          <span class="eyebrow">Selection</span>
+          <strong id="selectionStatus">Choose frames to download or share.</strong>
+        </div>
+        <div class="bottom-actions">
+          <button id="btnSelectAll" class="btn action-btn action-btn-select" type="button">
+            Select All
+          </button>
+          <button id="btnShare" class="btn action-btn action-btn-share" type="button" hidden disabled>
+            Share
+          </button>
+          <button
+            id="btnDownload"
+            class="btn primary action-btn action-btn-download"
+            type="button"
+            disabled
+          >
+            Download
+          </button>
+        </div>
       </div>
     </div>
+
     <div id="toast" class="toast" hidden role="status" aria-live="polite"></div>
 
-    <!-- Share modal -->
     <div id="shareModal" class="modal" hidden>
       <div class="modal-backdrop"></div>
       <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="shareTitle">
@@ -69,12 +98,42 @@
       </div>
     </div>
 
-    <div id="lightbox" class="lightbox" hidden>
-      <button class="lb-btn lb-close" aria-label="Close">×</button>
-      <button class="lb-btn lb-prev" aria-label="Previous">‹</button>
-      <img id="lightboxImage" alt="Full size" />
-      <div id="lbProgress" class="lb-progress" hidden>Loading…</div>
-      <button class="lb-btn lb-next" aria-label="Next">›</button>
+    <div id="lightbox" class="lightbox" hidden aria-hidden="true">
+      <div class="lb-topbar lb-chrome">
+        <button class="lb-action-btn lb-close" aria-label="Close">Close</button>
+        <div class="lb-meta">
+          <span id="lbAlbumName" class="lb-album-name"></span>
+          <span id="lbCounter" class="lb-counter">1 / 1</span>
+        </div>
+        <div class="lb-actions">
+          <button id="lbSelectBtn" class="lb-action-btn" type="button">Select</button>
+          <button id="lbShareBtn" class="lb-action-btn" type="button">Share</button>
+          <button id="lbDownloadBtn" class="lb-action-btn" type="button">Download</button>
+        </div>
+      </div>
+
+      <div id="lbStage" class="lb-stage">
+        <button class="lb-btn lb-prev" aria-label="Previous"></button>
+        <div class="lb-media-shell">
+          <div id="lbTrack" class="lb-track">
+            <div class="lb-slide">
+              <img id="lbPrevImage" class="lb-image" alt="" />
+            </div>
+            <div class="lb-slide">
+              <img id="lightboxImage" class="lb-image" alt="Full size" />
+            </div>
+            <div class="lb-slide">
+              <img id="lbNextImage" class="lb-image" alt="" />
+            </div>
+          </div>
+          <div id="lbProgress" class="lb-progress" hidden>Loading original...</div>
+        </div>
+        <button class="lb-btn lb-next" aria-label="Next"></button>
+      </div>
+
+      <div class="lb-bottombar lb-chrome">
+        <div id="lbFilmstrip" class="lb-filmstrip" aria-label="Photo strip"></div>
+      </div>
     </div>
 
     <footer class="site-footer">
@@ -82,384 +141,6 @@
     </footer>
 
     <script src="./main.js"></script>
-    <script>
-      function getParam(name) {
-        const p = new URLSearchParams(location.search);
-        return p.get(name);
-      }
-
-      window.addEventListener('DOMContentLoaded', async () => {
-        try {
-          const data = await window.PhotoShare.loadManifest();
-          const id = (getParam('g') || '').trim();
-          // Try to find by id first, then by name as a fallback (helps if ids/names mismatch)
-          let group = (data && Array.isArray(data.groups)) ? data.groups.find(x => x.id === id) : null;
-          if (!group && data && Array.isArray(data.groups)) {
-            group = data.groups.find(x => x.name === id);
-          }
-
-          const photosEl = document.getElementById('photos');
-          const emptyEl = document.getElementById('emptyState');
-          const titleEl = document.getElementById('groupTitle');
-          const headerTitleEl = document.getElementById('groupHeaderTitle');
-          const genEl = document.getElementById('generatedAt');
-
-          if (!group) {
-            if (emptyEl) emptyEl.hidden = false;
-            if (genEl) genEl.textContent = '';
-            return;
-          }
-
-          if (titleEl) titleEl.textContent = group.name || id;
-          if (headerTitleEl) headerTitleEl.textContent = group.name || id;
-          if (genEl) genEl.textContent = data.generatedAt ? `Updated: ${data.generatedAt}` : '';
-
-          if (!photosEl) {
-            // If container is missing, show empty state rather than crash
-            if (emptyEl) emptyEl.hidden = false;
-            return;
-          }
-
-          // Selection state
-          let selectionMode = false;
-          const selected = new Set();
-          let lastSelectedIndex = null;
-
-          const btnSelectHeader = document.getElementById('btnSelectHeader');
-          const btnSelectAll = document.getElementById('btnSelectAll');
-          const btnShare = document.getElementById('btnShare');
-          const btnDownload = document.getElementById('btnDownload');
-          let shareSupported = false;
-          const toastEl = document.getElementById('toast');
-          let toastTimer = null;
-
-          function showToast(msg){
-            if (!toastEl) return;
-            if (toastTimer){ clearTimeout(toastTimer); toastTimer = null; }
-            toastEl.textContent = msg;
-            toastEl.hidden = false;
-            toastTimer = setTimeout(()=>{ toastEl.hidden = true; }, 2200);
-          }
-
-          // Share modal elements
-          const shareModal = document.getElementById('shareModal');
-          const shareForm = document.getElementById('shareForm');
-          const shareTitle = document.getElementById('shareTitle');
-          const shareSubtitle = document.getElementById('shareSubtitle');
-          const shareNote = document.getElementById('shareNote');
-          const shareCancel = document.getElementById('shareCancel');
-          const shareConfirm = document.getElementById('shareConfirm');
-
-          const SharePresets = {
-            original: { label:'Original', maxWidth:null, quality:0.92, maxCount:3 },
-            large: { label:'Large (~2048px)', maxWidth:2048, quality:0.9, maxCount:10 },
-            medium: { label:'Medium (~1280px)', maxWidth:1280, quality:0.85, maxCount:20 },
-            small: { label:'Small (~800px)', maxWidth:800, quality:0.8, maxCount:40 },
-          };
-
-          function getSelectedPreset(){
-            const fd = new FormData(shareForm);
-            const val = (fd.get('preset') || 'large').toString();
-            return SharePresets[val] || SharePresets.large;
-          }
-
-          function openShareModal(){
-            const count = selected.size;
-            const preset = getSelectedPreset();
-            shareSubtitle.textContent = `${count} photo${count===1?'':'s'} selected`;
-            shareNote.textContent = `On iOS, sharing large files can fail. You can share up to ${preset.maxCount} at this setting.`;
-            shareModal.hidden = false;
-          }
-          function closeShareModal(){
-            shareModal.hidden = true;
-          }
-          shareCancel.addEventListener('click', (e)=>{ e.preventDefault(); closeShareModal(); });
-          shareForm.addEventListener('change', ()=>{
-            const preset = getSelectedPreset();
-            shareNote.textContent = `On iOS, sharing large files can fail. You can share up to ${preset.maxCount} at this setting.`;
-          });
-
-          // Detect Web Share (files) support and toggle Share button visibility
-          (function detectShareSupport(){
-            try{
-              if (navigator && 'share' in navigator && 'canShare' in navigator && window.File && window.Blob){
-                const f = new File([new Blob(['x'], { type: 'image/jpeg' })], 'x.jpg', { type: 'image/jpeg' });
-                shareSupported = !!navigator.canShare({ files: [f] });
-              } else {
-                shareSupported = false;
-              }
-            } catch { shareSupported = false; }
-            if (btnShare){ btnShare.hidden = !shareSupported; }
-          })();
-
-          function updateToolbar(){
-            const count = selected.size;
-            btnDownload.textContent = `Download Selected (${count})`;
-            btnDownload.disabled = count === 0;
-            if (btnShare){
-              btnShare.textContent = `Share Selected (${count})`;
-              btnShare.disabled = count === 0;
-            }
-          }
-
-          function enterSelect(){
-            if (selectionMode) return;
-            selectionMode = true;
-            document.body.classList.add('select-mode');
-            if (btnSelectHeader) btnSelectHeader.textContent = 'Cancel';
-          }
-          function exitSelect(){
-            selectionMode = false;
-            document.body.classList.remove('select-mode');
-            if (btnSelectHeader) btnSelectHeader.textContent = 'Select';
-            selected.clear();
-            lastSelectedIndex = null;
-            // Clear visual state
-            document.querySelectorAll('.photo-card.selected').forEach(el=>el.classList.remove('selected'));
-            updateToolbar();
-          }
-
-          btnSelectHeader.addEventListener('click', ()=> selectionMode ? exitSelect() : enterSelect());
-          btnSelectAll.addEventListener('click', ()=>{
-            selected.clear();
-            for (let i=0;i<group.photos.length;i++){ selected.add(i); }
-            document.querySelectorAll('.photo-card').forEach(el=>el.classList.add('selected'));
-            updateToolbar();
-          });
-          btnDownload.addEventListener('click', ()=>{
-            if (selected.size === 0) return;
-            const indices = Array.from(selected.values()).sort((a,b)=>a-b);
-            let delay = 0;
-            for (const i of indices){
-              const full = group.photos[i];
-              const url = `../${full}`;
-              const name = full.split('/').slice(-1)[0];
-              setTimeout(()=>{
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = name;
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
-              }, delay);
-              delay += 150; // stagger to improve browser compatibility
-            }
-          });
-
-          btnShare.addEventListener('click', ()=>{
-            if (!selected.size) return;
-            if (!shareSupported){ showToast('Failed to share'); return; }
-            openShareModal();
-          });
-
-          async function downscaleToFile(url, name, maxWidth, quality){
-            const img = new Image();
-            img.decoding = 'async';
-            img.src = url;
-            await new Promise((res, rej)=>{ img.onload=res; img.onerror=()=>rej(new Error('Image load failed')); });
-            const iw = img.naturalWidth || img.width; const ih = img.naturalHeight || img.height;
-            let tw = iw; let th = ih;
-            if (maxWidth && iw > maxWidth){ const s = maxWidth / iw; tw = Math.round(iw * s); th = Math.round(ih * s); }
-            const canvas = document.createElement('canvas');
-            canvas.width = tw; canvas.height = th;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, tw, th);
-            const blob = await new Promise((res)=> canvas.toBlob(res, 'image/jpeg', quality));
-            const finalBlob = blob || new Blob();
-            const finalName = name.replace(/\.[^.]+$/, '') + (maxWidth ? `_${maxWidth}.jpg` : '');
-            return new File([finalBlob], finalName, { type: 'image/jpeg' });
-          }
-
-          async function prepareFilesForShare(indices, preset){
-            const files = [];
-            for (const i of indices){
-              const full = group.photos[i];
-              const url = `../${full}`;
-              const name = full.split('/').slice(-1)[0];
-              if (preset.maxWidth){
-                files.push(await downscaleToFile(url, name, preset.maxWidth, preset.quality));
-              } else {
-                const res = await fetch(url, { cache:'no-store' });
-                const blob = await res.blob();
-                const type = blob.type || 'image/jpeg';
-                files.push(new File([blob], name, { type }));
-              }
-              // Yield to UI
-              await new Promise(r=>setTimeout(r));
-            }
-            return files;
-          }
-
-          shareConfirm.addEventListener('click', async (e)=>{
-            e.preventDefault();
-            const preset = getSelectedPreset();
-            const indices = Array.from(selected.values()).sort((a,b)=>a-b).slice(0, preset.maxCount);
-            if (!indices.length){ closeShareModal(); return; }
-            shareConfirm.disabled = true; shareConfirm.textContent = 'Preparing…';
-            try{
-              const files = await prepareFilesForShare(indices, preset);
-              if (navigator.canShare && navigator.canShare({ files })){
-                await navigator.share({ files, title: headerTitleEl?.textContent || 'Photos' });
-              } else {
-                showToast('Failed to share');
-              }
-            } catch(err){
-              console.error('Share failed:', err);
-              showToast('Failed to share');
-            } finally {
-              shareConfirm.disabled = false; shareConfirm.textContent = 'Share';
-              closeShareModal();
-            }
-          });
-
-          function setSelected(i, val){
-            if (val) selected.add(i); else selected.delete(i);
-            const card = document.querySelector(`.photo-card[data-index="${i}"]`);
-            if (card) card.classList.toggle('selected', val);
-            updateToolbar();
-          }
-
-          function toggleSelected(i){
-            setSelected(i, !selected.has(i));
-          }
-
-          function handleSelectClick(i, e){
-            if (e.shiftKey && lastSelectedIndex !== null){
-              const start = Math.min(lastSelectedIndex, i);
-              const end = Math.max(lastSelectedIndex, i);
-              for (let k=start; k<=end; k++){ setSelected(k, true); }
-            } else {
-              toggleSelected(i);
-            }
-            lastSelectedIndex = i;
-          }
-
-          // Build photo grid using thumbnails when available
-          for (let i = 0; i < (group.photos || []).length; i++) {
-            const p = group.photos[i];
-            const t = (group.thumbs && group.thumbs[i]) ? group.thumbs[i] : p;
-            const card = document.createElement('div');
-            card.className = 'photo-card';
-            card.dataset.index = String(i);
-
-            const a = document.createElement('a');
-            a.href = `../${p}`;
-            a.rel = 'noopener';
-            a.addEventListener('click', (e) => {
-              if (selectionMode) {
-                e.preventDefault();
-                handleSelectClick(i, e);
-              } else {
-                e.preventDefault();
-                openLightbox(i);
-              }
-            });
-
-            const img = document.createElement('img');
-            img.loading = 'lazy';
-            img.alt = group.name || '';
-            img.src = `../${t}`;
-
-            a.appendChild(img);
-            card.appendChild(a);
-            photosEl.appendChild(card);
-          }
-          // Lightbox setup
-          const lb = document.getElementById('lightbox');
-          const lbImg = document.getElementById('lightboxImage');
-          const lbProgress = document.getElementById('lbProgress');
-          const btnPrev = document.querySelector('.lb-prev');
-          const btnNext = document.querySelector('.lb-next');
-          const btnClose = document.querySelector('.lb-close');
-
-          let idx = 0;
-          let loadToken = 0; // prevent stale image swaps
-          const fullCache = new Map(); // index -> HTMLImageElement
-
-          function setProgress(visible){ if (lbProgress) lbProgress.hidden = !visible; }
-
-          function show(i){
-            idx = (i + group.photos.length) % group.photos.length;
-            const token = ++loadToken;
-            const full = group.photos[idx];
-            const thumb = (group.thumbs && group.thumbs[idx]) ? group.thumbs[idx] : null;
-
-            // Stage 1: show thumb immediately (or blank) for instant switch
-            if (thumb) {
-              lbImg.classList.add('is-thumb');
-              lbImg.src = `../${thumb}`;
-            } else {
-              lbImg.classList.remove('is-thumb');
-              lbImg.src = '';
-            }
-            setProgress(true);
-
-            // Use cached full image if available and complete
-            const cached = fullCache.get(idx);
-            if (cached && cached.complete) {
-              if (token === loadToken) {
-                lbImg.classList.remove('is-thumb');
-                lbImg.src = cached.src;
-                setProgress(false);
-              }
-            } else {
-              // Stage 2: preload full and swap when ready
-              const img = new Image();
-              img.decoding = 'async';
-              img.src = `../${full}`;
-              fullCache.set(idx, img);
-              img.onload = () => {
-                if (token === loadToken) {
-                  lbImg.classList.remove('is-thumb');
-                  lbImg.src = img.src;
-                  setProgress(false);
-                }
-              };
-              img.onerror = () => {
-                if (token === loadToken) setProgress(false);
-              };
-            }
-
-            // Opportunistically preload neighbors
-            preloadNeighbor(idx + 1);
-            preloadNeighbor(idx - 1);
-          }
-
-          function preloadNeighbor(j){
-            const k = (j + group.photos.length) % group.photos.length;
-            if (fullCache.has(k)) return;
-            const img = new Image();
-            img.decoding = 'async';
-            img.src = `../${group.photos[k]}`;
-            fullCache.set(k, img);
-          }
-          window.openLightbox = (i) => {
-            lb.hidden = false;
-            document.body.style.overflow = 'hidden';
-            show(i);
-          };
-          function closeLb(){
-            lb.hidden = true;
-            document.body.style.overflow = '';
-            lbImg.src = '';
-          }
-          btnPrev.addEventListener('click', () => show(idx - 1));
-          btnNext.addEventListener('click', () => show(idx + 1));
-          btnClose.addEventListener('click', closeLb);
-          lb.addEventListener('click', (e) => { if (e.target === lb) closeLb(); });
-          window.addEventListener('keydown', (e) => {
-            if (lb.hidden) return;
-            if (e.key === 'Escape') closeLb();
-            if (e.key === 'ArrowLeft') show(idx - 1);
-            if (e.key === 'ArrowRight') show(idx + 1);
-          });
-
-        } catch (err) {
-          console.error('Error rendering group page:', err);
-          const emptyEl = document.getElementById('emptyState');
-          if (emptyEl) emptyEl.hidden = false;
-        }
-      });
-    </script>
+    <script src="./group.js"></script>
   </body>
-  </html>
+</html>
