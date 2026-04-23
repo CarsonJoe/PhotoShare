@@ -807,6 +807,17 @@ body.is-ready .page-status {
   object-fit: contain;
   object-position: center;
   box-shadow: 0 40px 100px rgba(11, 8, 6, 0.28);
+  transform: translate(var(--lb-pan-x, 0px), var(--lb-pan-y, 0px)) scale(var(--lb-zoom, 1));
+  transform-origin: center;
+  touch-action: none;
+  transition:
+    filter 0.2s ease,
+    box-shadow 0.38s ease,
+    transform 0.26s var(--ease);
+}
+
+/* Suppress transform transition during active pinch/pan so it tracks fingers */
+.lightbox.is-pinching .lb-image {
   transition:
     filter 0.2s ease,
     box-shadow 0.38s ease;
@@ -1375,6 +1386,16 @@ body.is-ready .page-status {
     --lb-shell-pad-top: calc(env(safe-area-inset-top, 0px) + 74px);
     --lb-shell-pad-side: 0px;
     --lb-shell-pad-bottom: calc(env(safe-area-inset-bottom, 0px) + 118px);
+  }
+
+  /* Presenter mode on mobile: override the direct .lb-media-shell vars so the
+     image fills the screen. The ancestor .lightbox.is-chrome-hidden rule sets
+     these vars too, but a direct declaration on .lb-media-shell always wins
+     over an inherited one regardless of selector specificity. */
+  .lightbox.is-chrome-hidden .lb-media-shell {
+    --lb-shell-pad-top: env(safe-area-inset-top, 0px);
+    --lb-shell-pad-side: 0px;
+    --lb-shell-pad-bottom: env(safe-area-inset-bottom, 0px);
   }
 
   .lb-btn {

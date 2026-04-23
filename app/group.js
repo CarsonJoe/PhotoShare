@@ -82,6 +82,16 @@
         axis: '',
       };
 
+      // Pinch-zoom state
+      const pinchPointers = new Map(); // pointerId → {x, y}
+      let pinchState = null;           // set while two fingers are active
+      let lbZoom = 1;
+      let lbPanX = 0;
+      let lbPanY = 0;
+      let lastTapTime = 0;
+      let lastTapX = 0;
+      let lastTapY = 0;
+
       let selectionMode = false;
       let lastSelectedIndex = null;
       let shareSupported = false;
@@ -500,6 +510,36 @@
         lb.style.setProperty('--lb-backdrop-opacity', String(backdropOpacity));
       }
 
+      function clampPan(panX, panY, zoom) {
+        const maxX = Math.max(0, (zoom - 1) * window.innerWidth * 0.5);
+        const maxY = Math.max(0, (zoom - 1) * window.innerHeight * 0.5);
+        return {
+          x: Math.max(-maxX, Math.min(maxX, panX)),
+          y: Math.max(-maxY, Math.min(maxY, panY)),
+        };
+      }
+
+      function applyZoom(zoom, panX, panY) {
+        lbZoom = zoom;
+        lbPanX = panX;
+        lbPanY = panY;
+        lb.style.setProperty('--lb-zoom', String(zoom));
+        lb.style.setProperty('--lb-pan-x', `${panX}px`);
+        lb.style.setProperty('--lb-pan-y', `${panY}px`);
+      }
+
+      function resetZoom() {
+        lbZoom = 1;
+        lbPanX = 0;
+        lbPanY = 0;
+        lb.style.removeProperty('--lb-zoom');
+        lb.style.removeProperty('--lb-pan-x');
+        lb.style.removeProperty('--lb-pan-y');
+        lb.classList.remove('is-pinching');
+        pinchPointers.clear();
+        pinchState = null;
+      }
+
       function ensureFullImage(index) {
         const normalized = normalizeIndex(index);
         let img = fullCache.get(normalized);
@@ -628,17 +668,23 @@
       function renderTrack(index) {
         lightboxIndex = normalizeIndex(index);
         updateLightboxChrome();
+        resetZoom();
 
-        syncSlideImage(lbPrevImg, lightboxIndex - 1, { alt: '' });
+        // Update the center slide first, then snap the track back to center,
+        // then update the neighbor slides. This order ensures neighbors are
+        // only mutated once they're off-screen, eliminating the flash where
+        // lbNextImg/lbPrevImg briefly show wrong content while still visible.
         syncSlideImage(lbImg, lightboxIndex, {
           alt: `${group.name} photo ${lightboxIndex + 1}`,
           showProgress: true,
         });
+        resetTrackPosition();
+
+        syncSlideImage(lbPrevImg, lightboxIndex - 1, { alt: '' });
         syncSlideImage(lbNextImg, lightboxIndex + 1, { alt: '' });
 
         preloadNeighbor(lightboxIndex - 2);
         preloadNeighbor(lightboxIndex + 2);
-        resetTrackPosition();
       }
 
       function animateTrackTo(targetBase, nextIndex = null) {
@@ -663,6 +709,16 @@
           setTrackAnimated(false);
 
           if (nextIndex !== null) {
+            // Pre-copy the currently-visible slide's image into lbImg before
+            // renderTrack resets the track to center. Without this, there is a
+            // single-frame window where the track has snapped back but lbImg
+            // still shows the previous photo, causing a brief flash.
+            const landingSlide = targetBase === '-200%' ? lbNextImg : lbPrevImg;
+            if (landingSlide && landingSlide.src) {
+              lbImg.dataset.loadToken = String(++loadToken);
+              lbImg.classList.toggle('is-thumb', landingSlide.classList.contains('is-thumb'));
+              lbImg.src = landingSlide.src;
+            }
             renderTrack(nextIndex);
           } else {
             resetTrackPosition();
@@ -694,6 +750,7 @@
 
       function closeLightbox() {
         clearTrackAnimationTimer();
+        resetZoom();
         [lbPrevImg, lbImg, lbNextImg].forEach((imgEl) => {
           if (!imgEl) return;
           imgEl.dataset.loadToken = String(++loadToken);
@@ -714,6 +771,31 @@
         if (event.pointerType === 'mouse' && event.button !== 0) return;
         if (event.target.closest('.lb-btn, .lb-action-btn, .lb-thumb')) return;
 
+        pinchPointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+        lbStage.setPointerCapture(event.pointerId);
+
+        if (pinchPointers.size >= 2) {
+          // Second finger — cancel any active single-finger drag and start pinch.
+          if (lightboxDrag.axis) {
+            lb.classList.remove('is-dragging');
+            resetLightboxTransform();
+          }
+          lightboxDrag.pointerId = null;
+          lightboxDrag.moved = false;
+          lb.classList.add('is-pinching');
+
+          const pts = Array.from(pinchPointers.values());
+          pinchState = {
+            startDist: Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y),
+            startZoom: lbZoom,
+            startPanX: lbPanX,
+            startPanY: lbPanY,
+            startMidX: (pts[0].x + pts[1].x) / 2,
+            startMidY: (pts[0].y + pts[1].y) / 2,
+          };
+          return;
+        }
+
         lightboxDrag.pointerId = event.pointerId;
         lightboxDrag.startX = event.clientX;
         lightboxDrag.startY = event.clientY;
@@ -721,19 +803,63 @@
         lightboxDrag.lastY = event.clientY;
         lightboxDrag.axis = '';
         lightboxDrag.moved = false;
-        lbStage.setPointerCapture(event.pointerId);
       }
 
       function handleStagePointerMove(event) {
+        if (pinchPointers.has(event.pointerId)) {
+          pinchPointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+        }
+
+        // Two-finger pinch
+        if (pinchState && pinchPointers.size >= 2) {
+          event.preventDefault();
+          const pts = Array.from(pinchPointers.values());
+          const curDist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
+          const curMidX = (pts[0].x + pts[1].x) / 2;
+          const curMidY = (pts[0].y + pts[1].y) / 2;
+
+          const rawZoom = pinchState.startZoom * (curDist / pinchState.startDist);
+          const newZoom = Math.max(1, Math.min(5, rawZoom));
+
+          // Keep the start-midpoint anchor fixed under the fingers.
+          // With transform: translate(panX,panY) scale(zoom) and origin:center,
+          // a point at image-relative coords (ix,iy) appears at
+          // (cx + ix*zoom + panX, cy + iy*zoom + panY).
+          const cx = window.innerWidth / 2;
+          const cy = window.innerHeight / 2;
+          const anchorX = (pinchState.startMidX - cx - pinchState.startPanX) / pinchState.startZoom;
+          const anchorY = (pinchState.startMidY - cy - pinchState.startPanY) / pinchState.startZoom;
+          const rawPanX = curMidX - cx - anchorX * newZoom;
+          const rawPanY = curMidY - cy - anchorY * newZoom;
+          const clamped = clampPan(rawPanX, rawPanY, newZoom);
+          applyZoom(newZoom, clamped.x, clamped.y);
+          return;
+        }
+
         if (event.pointerId !== lightboxDrag.pointerId) return;
+
+        const prevX = lightboxDrag.lastX;
+        const prevY = lightboxDrag.lastY;
+        lightboxDrag.lastX = event.clientX;
+        lightboxDrag.lastY = event.clientY;
+
+        // While zoomed in: single-finger pans the image
+        if (lbZoom > 1) {
+          lightboxDrag.moved = true;
+          event.preventDefault();
+          const clamped = clampPan(
+            lbPanX + (event.clientX - prevX),
+            lbPanY + (event.clientY - prevY),
+            lbZoom
+          );
+          applyZoom(lbZoom, clamped.x, clamped.y);
+          return;
+        }
 
         const dx = event.clientX - lightboxDrag.startX;
         const dy = event.clientY - lightboxDrag.startY;
         const absX = Math.abs(dx);
         const absY = Math.abs(dy);
-
-        lightboxDrag.lastX = event.clientX;
-        lightboxDrag.lastY = event.clientY;
 
         if (!lightboxDrag.axis) {
           if (absX < 10 && absY < 10) return;
@@ -764,7 +890,39 @@
       }
 
       function handleStagePointerEnd(event) {
+        pinchPointers.delete(event.pointerId);
+
+        try {
+          lbStage.releasePointerCapture(event.pointerId);
+        } catch {
+          // Some browsers release capture automatically.
+        }
+
+        // End of pinch (one or both fingers lifted)
+        if (pinchState) {
+          if (pinchPointers.size < 2) {
+            pinchState = null;
+            lb.classList.remove('is-pinching');
+
+            if (lbZoom <= 1) {
+              resetZoom();
+            } else if (pinchPointers.size === 1) {
+              // One finger remains — set it up for panning
+              const [remId, remPos] = Array.from(pinchPointers.entries())[0];
+              lightboxDrag.pointerId = remId;
+              lightboxDrag.startX = remPos.x;
+              lightboxDrag.startY = remPos.y;
+              lightboxDrag.lastX = remPos.x;
+              lightboxDrag.lastY = remPos.y;
+              lightboxDrag.moved = false;
+              lightboxDrag.axis = '';
+            }
+          }
+          return;
+        }
+
         if (event.pointerId !== lightboxDrag.pointerId) return;
+        lightboxDrag.pointerId = null;
 
         const dx = event.clientX - lightboxDrag.startX;
         const dy = event.clientY - lightboxDrag.startY;
@@ -773,13 +931,43 @@
         const thresholdX = Math.min(window.innerWidth * 0.18, 120);
         const thresholdY = Math.min(window.innerHeight * 0.14, 160);
 
-        try {
-          lbStage.releasePointerCapture(event.pointerId);
-        } catch {
-          // Ignore browsers that release capture automatically.
+        // While zoomed: single-finger ends pan (no navigation/dismiss)
+        if (lbZoom > 1) {
+          if (!lightboxDrag.moved) {
+            // Tap while zoomed — check for double-tap to reset
+            const now = Date.now();
+            if (now - lastTapTime < 300 && Math.hypot(event.clientX - lastTapX, event.clientY - lastTapY) < 50) {
+              resetZoom();
+              lastTapTime = 0;
+              return;
+            }
+            lastTapTime = now;
+            lastTapX = event.clientX;
+            lastTapY = event.clientY;
+          }
+          lb.classList.remove('is-dragging');
+          finishGestureState();
+          return;
         }
 
         if (!lightboxDrag.moved) {
+          // Tap — check for double-tap to zoom in
+          const now = Date.now();
+          if (now - lastTapTime < 300 && Math.hypot(event.clientX - lastTapX, event.clientY - lastTapY) < 50) {
+            const cx = window.innerWidth / 2;
+            const cy = window.innerHeight / 2;
+            const newZoom = 2.5;
+            const rawPanX = (event.clientX - cx) * (1 - newZoom);
+            const rawPanY = (event.clientY - cy) * (1 - newZoom);
+            const clamped = clampPan(rawPanX, rawPanY, newZoom);
+            applyZoom(newZoom, clamped.x, clamped.y);
+            lastTapTime = 0;
+            clearGesture();
+            return;
+          }
+          lastTapTime = now;
+          lastTapX = event.clientX;
+          lastTapY = event.clientY;
           setChromeVisible(!lightboxChromeVisible);
           clearGesture();
           return;
