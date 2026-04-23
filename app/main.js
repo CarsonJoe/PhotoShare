@@ -59,6 +59,15 @@
   }
 
   async function loadManifest() {
+    // When opened via file://, fetch() is blocked by the browser's same-origin
+    // policy. The build script writes photos-inline.js which sets this global,
+    // so local usage works without needing a dev server.
+    if (window.__PHOTOSHARE_MANIFEST__) {
+      const data = window.__PHOTOSHARE_MANIFEST__;
+      data.groups = Array.isArray(data.groups) ? data.groups.map(normalizeGroup) : [];
+      data.groups.sort((a, b) => a.name.localeCompare(b.name));
+      return data;
+    }
     const url = `${ManifestPath}?v=${Date.now()}`;
     try {
       const res = await fetch(url, { cache: 'no-cache' });

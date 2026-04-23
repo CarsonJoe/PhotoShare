@@ -701,7 +701,8 @@
         setTrackPosition(targetBase, 0);
 
         let finished = false;
-        const finalize = () => {
+        const finalize = (e) => {
+          if (e && (e.target !== lbTrack || e.propertyName !== 'transform')) return;
           if (finished) return;
           finished = true;
           lbTrack.removeEventListener('transitionend', finalize);

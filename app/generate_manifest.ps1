@@ -155,3 +155,10 @@ $manifest = [PSCustomObject]@{
 $json = $manifest | ConvertTo-Json -Depth 6
 Set-Content -Path $manifestPath -Value $json -Encoding UTF8
 Write-Host "Wrote manifest to" (Resolve-Path $manifestPath)
+
+# Write an inline script so the app works when opened via file:// (no server).
+# Browsers block fetch() on file:// origins; loading a <script> tag is exempt.
+$inlinePath = Join-Path $scriptDir 'photos-inline.js'
+$inlineContent = "window.__PHOTOSHARE_MANIFEST__ = $json;"
+Set-Content -Path $inlinePath -Value $inlineContent -Encoding UTF8
+Write-Host "Wrote inline manifest to" (Resolve-Path $inlinePath)

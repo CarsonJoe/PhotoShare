@@ -1,0 +1,161 @@
+window.__PHOTOSHARE_MANIFEST__ = {
+    "generatedAt":  "2025-09-14 11:34:20",
+    "thumbWidth":  600,
+    "groups":  [
+                   {
+                       "id":  "Colorado S25\u0027",
+                       "name":  "Colorado S25\u0027",
+                       "cover":  "photos/Colorado S25\u0027/P1020289.jpg",
+                       "coverThumb":  "photos/_thumbs/Colorado S25\u0027/P1020289.jpg",
+                       "photos":  [
+                                      "photos/Colorado S25\u0027/P1020289.jpg",
+                                      "photos/Colorado S25\u0027/P1020293.jpg",
+                                      "photos/Colorado S25\u0027/P1020294.jpg",
+                                      "photos/Colorado S25\u0027/P1020299.jpg",
+                                      "photos/Colorado S25\u0027/P1020320.jpg",
+                                      "photos/Colorado S25\u0027/P1020341.jpg",
+                                      "photos/Colorado S25\u0027/P1020354.jpg",
+                                      "photos/Colorado S25\u0027/P1020372.jpg",
+                                      "photos/Colorado S25\u0027/P1020392.jpg",
+                                      "photos/Colorado S25\u0027/P1020395.jpg",
+                                      "photos/Colorado S25\u0027/P1020411.jpg"
+                                  ],
+                       "thumbs":  [
+                                      "photos/_thumbs/Colorado S25\u0027/P1020289.jpg",
+                                      "photos/_thumbs/Colorado S25\u0027/P1020293.jpg",
+                                      "photos/_thumbs/Colorado S25\u0027/P1020294.jpg",
+                                      "photos/_thumbs/Colorado S25\u0027/P1020299.jpg",
+                                      "photos/_thumbs/Colorado S25\u0027/P1020320.jpg",
+                                      "photos/_thumbs/Colorado S25\u0027/P1020341.jpg",
+                                      "photos/_thumbs/Colorado S25\u0027/P1020354.jpg",
+                                      "photos/_thumbs/Colorado S25\u0027/P1020372.jpg",
+                                      "photos/_thumbs/Colorado S25\u0027/P1020392.jpg",
+                                      "photos/_thumbs/Colorado S25\u0027/P1020395.jpg",
+                                      "photos/_thumbs/Colorado S25\u0027/P1020411.jpg"
+                                  ]
+                   },
+                   {
+                       "id":  "Glacier S25\u0027",
+                       "name":  "Glacier S25\u0027",
+                       "cover":  "photos/Glacier S25\u0027/P1010897.jpg",
+                       "coverThumb":  "photos/_thumbs/Glacier S25\u0027/P1010897.jpg",
+                       "photos":  [
+                                      "photos/Glacier S25\u0027/P1010897.jpg",
+                                      "photos/Glacier S25\u0027/P1010910.jpg",
+                                      "photos/Glacier S25\u0027/P1010915.jpg",
+                                      "photos/Glacier S25\u0027/P1010929.jpg",
+                                      "photos/Glacier S25\u0027/P1010932.jpg",
+                                      "photos/Glacier S25\u0027/P1010935.jpg",
+                                      "photos/Glacier S25\u0027/P1010938.jpg",
+                                      "photos/Glacier S25\u0027/P1010943.jpg",
+                                      "photos/Glacier S25\u0027/P1010957.jpg",
+                                      "photos/Glacier S25\u0027/P1010960.jpg",
+                                      "photos/Glacier S25\u0027/P1010962.jpg",
+                                      "photos/Glacier S25\u0027/P1010974.jpg"
+                                  ],
+                       "thumbs":  [
+                                      "photos/_thumbs/Glacier S25\u0027/P1010897.jpg",
+                                      "photos/_thumbs/Glacier S25\u0027/P1010910.jpg",
+                                      "photos/_thumbs/Glacier S25\u0027/P1010915.jpg",
+                                      "photos/_thumbs/Glacier S25\u0027/P1010929.jpg",
+                                      "photos/_thumbs/Glacier S25\u0027/P1010932.jpg",
+                                      "photos/_thumbs/Glacier S25\u0027/P1010935.jpg",
+                                      "photos/_thumbs/Glacier S25\u0027/P1010938.jpg",
+                                      "photos/_thumbs/Glacier S25\u0027/P1010943.jpg",
+                                      "photos/_thumbs/Glacier S25\u0027/P1010957.jpg",
+                                      "photos/_thumbs/Glacier S25\u0027/P1010960.jpg",
+                                      "photos/_thumbs/Glacier S25\u0027/P1010962.jpg",
+                                      "photos/_thumbs/Glacier S25\u0027/P1010974.jpg"
+                                  ]
+                   },
+                   {
+                       "id":  "Jackson Hole S25\u0027",
+                       "name":  "Jackson Hole S25\u0027",
+                       "cover":  "photos/Jackson Hole S25\u0027/P1010988.JPG",
+                       "coverThumb":  "photos/_thumbs/Jackson Hole S25\u0027/P1010988.jpg",
+                       "photos":  [
+                                      "photos/Jackson Hole S25\u0027/P1010988.JPG",
+                                      "photos/Jackson Hole S25\u0027/P1010997.JPG",
+                                      "photos/Jackson Hole S25\u0027/P1010998.JPG",
+                                      "photos/Jackson Hole S25\u0027/P1020016.JPG",
+                                      "photos/Jackson Hole S25\u0027/P1020021.jpg",
+                                      "photos/Jackson Hole S25\u0027/P1020024.JPG",
+                                      "photos/Jackson Hole S25\u0027/P1020025.JPG",
+                                      "photos/Jackson Hole S25\u0027/P1020026.JPG"
+                                  ],
+                       "thumbs":  [
+                                      "photos/_thumbs/Jackson Hole S25\u0027/P1010988.jpg",
+                                      "photos/_thumbs/Jackson Hole S25\u0027/P1010997.jpg",
+                                      "photos/_thumbs/Jackson Hole S25\u0027/P1010998.jpg",
+                                      "photos/_thumbs/Jackson Hole S25\u0027/P1020016.jpg",
+                                      "photos/_thumbs/Jackson Hole S25\u0027/P1020021.jpg",
+                                      "photos/_thumbs/Jackson Hole S25\u0027/P1020024.jpg",
+                                      "photos/_thumbs/Jackson Hole S25\u0027/P1020025.jpg",
+                                      "photos/_thumbs/Jackson Hole S25\u0027/P1020026.jpg"
+                                  ]
+                   },
+                   {
+                       "id":  "Moab S25\u0027",
+                       "name":  "Moab S25\u0027",
+                       "cover":  "photos/Moab S25\u0027/P1020056.jpg",
+                       "coverThumb":  "photos/_thumbs/Moab S25\u0027/P1020056.jpg",
+                       "photos":  [
+                                      "photos/Moab S25\u0027/P1020056.jpg",
+                                      "photos/Moab S25\u0027/P1020065.jpg",
+                                      "photos/Moab S25\u0027/P1020067.jpg",
+                                      "photos/Moab S25\u0027/P1020107.jpg",
+                                      "photos/Moab S25\u0027/P1020145.jpg",
+                                      "photos/Moab S25\u0027/P1020147.jpg",
+                                      "photos/Moab S25\u0027/P1020153.jpg",
+                                      "photos/Moab S25\u0027/P1020162.jpg",
+                                      "photos/Moab S25\u0027/P1020185.jpg",
+                                      "photos/Moab S25\u0027/P1020205.jpg",
+                                      "photos/Moab S25\u0027/P1020218.jpg",
+                                      "photos/Moab S25\u0027/P1020228.jpg",
+                                      "photos/Moab S25\u0027/P1020232.jpg",
+                                      "photos/Moab S25\u0027/P1020242.jpg",
+                                      "photos/Moab S25\u0027/P1020270.jpg",
+                                      "photos/Moab S25\u0027/P1020276.jpg",
+                                      "photos/Moab S25\u0027/P1020288.jpg"
+                                  ],
+                       "thumbs":  [
+                                      "photos/_thumbs/Moab S25\u0027/P1020056.jpg",
+                                      "photos/_thumbs/Moab S25\u0027/P1020065.jpg",
+                                      "photos/_thumbs/Moab S25\u0027/P1020067.jpg",
+                                      "photos/_thumbs/Moab S25\u0027/P1020107.jpg",
+                                      "photos/_thumbs/Moab S25\u0027/P1020145.jpg",
+                                      "photos/_thumbs/Moab S25\u0027/P1020147.jpg",
+                                      "photos/_thumbs/Moab S25\u0027/P1020153.jpg",
+                                      "photos/_thumbs/Moab S25\u0027/P1020162.jpg",
+                                      "photos/_thumbs/Moab S25\u0027/P1020185.jpg",
+                                      "photos/_thumbs/Moab S25\u0027/P1020205.jpg",
+                                      "photos/_thumbs/Moab S25\u0027/P1020218.jpg",
+                                      "photos/_thumbs/Moab S25\u0027/P1020228.jpg",
+                                      "photos/_thumbs/Moab S25\u0027/P1020232.jpg",
+                                      "photos/_thumbs/Moab S25\u0027/P1020242.jpg",
+                                      "photos/_thumbs/Moab S25\u0027/P1020270.jpg",
+                                      "photos/_thumbs/Moab S25\u0027/P1020276.jpg",
+                                      "photos/_thumbs/Moab S25\u0027/P1020288.jpg"
+                                  ]
+                   },
+                   {
+                       "id":  "Uinta Wasach-Cache NF S25\u0027",
+                       "name":  "Uinta Wasach-Cache NF S25\u0027",
+                       "cover":  "photos/Uinta Wasach-Cache NF S25\u0027/P1020030.jpg",
+                       "coverThumb":  "photos/_thumbs/Uinta Wasach-Cache NF S25\u0027/P1020030.jpg",
+                       "photos":  [
+                                      "photos/Uinta Wasach-Cache NF S25\u0027/P1020030.jpg",
+                                      "photos/Uinta Wasach-Cache NF S25\u0027/P1020034.jpg",
+                                      "photos/Uinta Wasach-Cache NF S25\u0027/P1020045.jpg"
+                                  ],
+                       "thumbs":  [
+                                      "photos/_thumbs/Uinta Wasach-Cache NF S25\u0027/P1020030.jpg",
+                                      "photos/_thumbs/Uinta Wasach-Cache NF S25\u0027/P1020034.jpg",
+                                      "photos/_thumbs/Uinta Wasach-Cache NF S25\u0027/P1020045.jpg"
+                                  ]
+                   }
+               ],
+    "locations":  [
+
+                  ]
+};
