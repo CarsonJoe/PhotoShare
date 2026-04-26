@@ -1,5 +1,5 @@
 window.__PHOTOSHARE_MANIFEST__ = {
-  "generatedAt": "2026-04-22 23:18:08",
+  "generatedAt": "2026-04-26 08:40:31",
   "thumbWidth": 600,
   "groups": [
     {
@@ -554,6 +554,90 @@ window.__PHOTOSHARE_MANIFEST__ = {
           "name": "P1020288",
           "width": 3648,
           "height": 5472
+        }
+      ]
+    },
+    {
+      "id": "Pinnacles s26'",
+      "name": "Pinnacles s26'",
+      "cover": "photos/Pinnacles s26'/P1020660.jpg",
+      "coverThumb": "photos/_thumbs/Pinnacles s26'/P1020660.jpg",
+      "photos": [
+        "photos/Pinnacles s26'/P1020660.jpg",
+        "photos/Pinnacles s26'/P1020685.jpg",
+        "photos/Pinnacles s26'/P1020702.jpg",
+        "photos/Pinnacles s26'/P1020722.jpg",
+        "photos/Pinnacles s26'/P1020739.jpg",
+        "photos/Pinnacles s26'/P1020741.jpg",
+        "photos/Pinnacles s26'/P1020744.jpg",
+        "photos/Pinnacles s26'/P1020764.jpg"
+      ],
+      "thumbs": [
+        "photos/_thumbs/Pinnacles s26'/P1020660.jpg",
+        "photos/_thumbs/Pinnacles s26'/P1020685.jpg",
+        "photos/_thumbs/Pinnacles s26'/P1020702.jpg",
+        "photos/_thumbs/Pinnacles s26'/P1020722.jpg",
+        "photos/_thumbs/Pinnacles s26'/P1020739.jpg",
+        "photos/_thumbs/Pinnacles s26'/P1020741.jpg",
+        "photos/_thumbs/Pinnacles s26'/P1020744.jpg",
+        "photos/_thumbs/Pinnacles s26'/P1020764.jpg"
+      ],
+      "items": [
+        {
+          "src": "photos/Pinnacles s26'/P1020660.jpg",
+          "thumb": "photos/_thumbs/Pinnacles s26'/P1020660.jpg",
+          "name": "P1020660",
+          "width": 5472,
+          "height": 3648
+        },
+        {
+          "src": "photos/Pinnacles s26'/P1020685.jpg",
+          "thumb": "photos/_thumbs/Pinnacles s26'/P1020685.jpg",
+          "name": "P1020685",
+          "width": 5472,
+          "height": 3648
+        },
+        {
+          "src": "photos/Pinnacles s26'/P1020702.jpg",
+          "thumb": "photos/_thumbs/Pinnacles s26'/P1020702.jpg",
+          "name": "P1020702",
+          "width": 3648,
+          "height": 5472
+        },
+        {
+          "src": "photos/Pinnacles s26'/P1020722.jpg",
+          "thumb": "photos/_thumbs/Pinnacles s26'/P1020722.jpg",
+          "name": "P1020722",
+          "width": 5472,
+          "height": 3648
+        },
+        {
+          "src": "photos/Pinnacles s26'/P1020739.jpg",
+          "thumb": "photos/_thumbs/Pinnacles s26'/P1020739.jpg",
+          "name": "P1020739",
+          "width": 3648,
+          "height": 5472
+        },
+        {
+          "src": "photos/Pinnacles s26'/P1020741.jpg",
+          "thumb": "photos/_thumbs/Pinnacles s26'/P1020741.jpg",
+          "name": "P1020741",
+          "width": 5472,
+          "height": 3648
+        },
+        {
+          "src": "photos/Pinnacles s26'/P1020744.jpg",
+          "thumb": "photos/_thumbs/Pinnacles s26'/P1020744.jpg",
+          "name": "P1020744",
+          "width": 3648,
+          "height": 5472
+        },
+        {
+          "src": "photos/Pinnacles s26'/P1020764.jpg",
+          "thumb": "photos/_thumbs/Pinnacles s26'/P1020764.jpg",
+          "name": "P1020764",
+          "width": 5472,
+          "height": 3648
         }
       ]
     },
