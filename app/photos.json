@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-11 11:47:27",
+  "generatedAt": "2026-05-11 12:26:36",
   "thumbWidth": 600,
   "groups": [
     {
@@ -732,6 +732,54 @@
           "src": "photos/Uinta Wasach-Cache NF S25'/P1020045.jpg",
           "thumb": "photos/_thumbs/Uinta Wasach-Cache NF S25'/P1020045.jpg",
           "name": "P1020045",
+          "width": 5472,
+          "height": 3648
+        }
+      ]
+    },
+    {
+      "id": "Zion",
+      "name": "Zion",
+      "cover": "photos/Zion/P1020441.jpg",
+      "coverThumb": "photos/_thumbs/Zion/P1020441.jpg",
+      "photos": [
+        "photos/Zion/P1020441.jpg",
+        "photos/Zion/P1020499.jpg",
+        "photos/Zion/P1020506.jpg",
+        "photos/Zion/P1020512.jpg"
+      ],
+      "thumbs": [
+        "photos/_thumbs/Zion/P1020441.jpg",
+        "photos/_thumbs/Zion/P1020499.jpg",
+        "photos/_thumbs/Zion/P1020506.jpg",
+        "photos/_thumbs/Zion/P1020512.jpg"
+      ],
+      "items": [
+        {
+          "src": "photos/Zion/P1020441.jpg",
+          "thumb": "photos/_thumbs/Zion/P1020441.jpg",
+          "name": "P1020441",
+          "width": 5472,
+          "height": 3648
+        },
+        {
+          "src": "photos/Zion/P1020499.jpg",
+          "thumb": "photos/_thumbs/Zion/P1020499.jpg",
+          "name": "P1020499",
+          "width": 5472,
+          "height": 3648
+        },
+        {
+          "src": "photos/Zion/P1020506.jpg",
+          "thumb": "photos/_thumbs/Zion/P1020506.jpg",
+          "name": "P1020506",
+          "width": 5472,
+          "height": 3648
+        },
+        {
+          "src": "photos/Zion/P1020512.jpg",
+          "thumb": "photos/_thumbs/Zion/P1020512.jpg",
+          "name": "P1020512",
           "width": 5472,
           "height": 3648
         }
