@@ -1,7 +1,100 @@
 window.__PHOTOSHARE_MANIFEST__ = {
-  "generatedAt": "2026-05-11 12:26:36",
+  "generatedAt": "2026-05-11 13:15:24",
   "thumbWidth": 600,
   "groups": [
+    {
+      "id": "Alaska",
+      "name": "Alaska",
+      "cover": "photos/Alaska/P1010453.jpg",
+      "coverThumb": "photos/_thumbs/Alaska/P1010453.jpg",
+      "photos": [
+        "photos/Alaska/P1010453.jpg",
+        "photos/Alaska/P1010456.jpg",
+        "photos/Alaska/P1010479.jpg",
+        "photos/Alaska/P1010521.jpg",
+        "photos/Alaska/P1010560.jpg",
+        "photos/Alaska/P1010614.jpg",
+        "photos/Alaska/P1010633.jpg",
+        "photos/Alaska/P1010650.jpg",
+        "photos/Alaska/P1010665.jpg"
+      ],
+      "thumbs": [
+        "photos/_thumbs/Alaska/P1010453.jpg",
+        "photos/_thumbs/Alaska/P1010456.jpg",
+        "photos/_thumbs/Alaska/P1010479.jpg",
+        "photos/_thumbs/Alaska/P1010521.jpg",
+        "photos/_thumbs/Alaska/P1010560.jpg",
+        "photos/_thumbs/Alaska/P1010614.jpg",
+        "photos/_thumbs/Alaska/P1010633.jpg",
+        "photos/_thumbs/Alaska/P1010650.jpg",
+        "photos/_thumbs/Alaska/P1010665.jpg"
+      ],
+      "items": [
+        {
+          "src": "photos/Alaska/P1010453.jpg",
+          "thumb": "photos/_thumbs/Alaska/P1010453.jpg",
+          "name": "P1010453",
+          "width": 5472,
+          "height": 3648
+        },
+        {
+          "src": "photos/Alaska/P1010456.jpg",
+          "thumb": "photos/_thumbs/Alaska/P1010456.jpg",
+          "name": "P1010456",
+          "width": 5472,
+          "height": 3648
+        },
+        {
+          "src": "photos/Alaska/P1010479.jpg",
+          "thumb": "photos/_thumbs/Alaska/P1010479.jpg",
+          "name": "P1010479",
+          "width": 5472,
+          "height": 3648
+        },
+        {
+          "src": "photos/Alaska/P1010521.jpg",
+          "thumb": "photos/_thumbs/Alaska/P1010521.jpg",
+          "name": "P1010521",
+          "width": 5472,
+          "height": 3648
+        },
+        {
+          "src": "photos/Alaska/P1010560.jpg",
+          "thumb": "photos/_thumbs/Alaska/P1010560.jpg",
+          "name": "P1010560",
+          "width": 5472,
+          "height": 3648
+        },
+        {
+          "src": "photos/Alaska/P1010614.jpg",
+          "thumb": "photos/_thumbs/Alaska/P1010614.jpg",
+          "name": "P1010614",
+          "width": 5472,
+          "height": 3648
+        },
+        {
+          "src": "photos/Alaska/P1010633.jpg",
+          "thumb": "photos/_thumbs/Alaska/P1010633.jpg",
+          "name": "P1010633",
+          "width": 5472,
+          "height": 3648
+        },
+        {
+          "src": "photos/Alaska/P1010650.jpg",
+          "thumb": "photos/_thumbs/Alaska/P1010650.jpg",
+          "name": "P1010650",
+          "width": 5472,
+          "height": 3648
+        },
+        {
+          "src": "photos/Alaska/P1010665.jpg",
+          "thumb": "photos/_thumbs/Alaska/P1010665.jpg",
+          "name": "P1010665",
+          "width": 5472,
+          "height": 3648
+        }
+      ]
+    },
     {
       "id": "Cambell 26'",
       "name": "Cambell 26'",
@@ -450,6 +543,45 @@ window.__PHOTOSHARE_MANIFEST__ = {
       ]
     },
     {
+      "id": "Lassen",
+      "name": "Lassen",
+      "cover": "photos/Lassen/P1010762.jpg",
+      "coverThumb": "photos/_thumbs/Lassen/P1010762.jpg",
+      "photos": [
+        "photos/Lassen/P1010762.jpg",
+        "photos/Lassen/P1010784.jpg",
+        "photos/Lassen/P1010797.jpg"
+      ],
+      "thumbs": [
+        "photos/_thumbs/Lassen/P1010762.jpg",
+        "photos/_thumbs/Lassen/P1010784.jpg",
+        "photos/_thumbs/Lassen/P1010797.jpg"
+      ],
+      "items": [
+        {
+          "src": "photos/Lassen/P1010762.jpg",
+          "thumb": "photos/_thumbs/Lassen/P1010762.jpg",
+          "name": "P1010762",
+          "width": 3648,
+          "height": 5472
+        },
+        {
+          "src": "photos/Lassen/P1010784.jpg",
+          "thumb": "photos/_thumbs/Lassen/P1010784.jpg",
+          "name": "P1010784",
+          "width": 5472,
+          "height": 3648
+        },
+        {
+          "src": "photos/Lassen/P1010797.jpg",
+          "thumb": "photos/_thumbs/Lassen/P1010797.jpg",
+          "name": "P1010797",
+          "width": 5472,
+          "height": 3648
+        }
+      ]
+    },
+    {
       "id": "Moab S25'",
       "name": "Moab S25'",
       "cover": "photos/Moab S25'/P1020056.jpg",
@@ -693,6 +825,72 @@ window.__PHOTOSHARE_MANIFEST__ = {
           "src": "photos/Pinnacles s26'/P1020764.jpg",
           "thumb": "photos/_thumbs/Pinnacles s26'/P1020764.jpg",
           "name": "P1020764",
+          "width": 5472,
+          "height": 3648
+        }
+      ]
+    },
+    {
+      "id": "Tahoe",
+      "name": "Tahoe",
+      "cover": "photos/Tahoe/P1010232.jpg",
+      "coverThumb": "photos/_thumbs/Tahoe/P1010232.jpg",
+      "photos": [
+        "photos/Tahoe/P1010232.jpg",
+        "photos/Tahoe/P1010369.jpg",
+        "photos/Tahoe/P1010370.jpg",
+        "photos/Tahoe/P1010404.jpg",
+        "photos/Tahoe/P1010407.jpg",
+        "photos/Tahoe/P1010414.jpg"
+      ],
+      "thumbs": [
+        "photos/_thumbs/Tahoe/P1010232.jpg",
+        "photos/_thumbs/Tahoe/P1010369.jpg",
+        "photos/_thumbs/Tahoe/P1010370.jpg",
+        "photos/_thumbs/Tahoe/P1010404.jpg",
+        "photos/_thumbs/Tahoe/P1010407.jpg",
+        "photos/_thumbs/Tahoe/P1010414.jpg"
+      ],
+      "items": [
+        {
+          "src": "photos/Tahoe/P1010232.jpg",
+          "thumb": "photos/_thumbs/Tahoe/P1010232.jpg",
+          "name": "P1010232",
+          "width": 5472,
+          "height": 3648
+        },
+        {
+          "src": "photos/Tahoe/P1010369.jpg",
+          "thumb": "photos/_thumbs/Tahoe/P1010369.jpg",
+          "name": "P1010369",
+          "width": 5472,
+          "height": 3648
+        },
+        {
+          "src": "photos/Tahoe/P1010370.jpg",
+          "thumb": "photos/_thumbs/Tahoe/P1010370.jpg",
+          "name": "P1010370",
+          "width": 5472,
+          "height": 3648
+        },
+        {
+          "src": "photos/Tahoe/P1010404.jpg",
+          "thumb": "photos/_thumbs/Tahoe/P1010404.jpg",
+          "name": "P1010404",
+          "width": 3648,
+          "height": 5472
+        },
+        {
+          "src": "photos/Tahoe/P1010407.jpg",
+          "thumb": "photos/_thumbs/Tahoe/P1010407.jpg",
+          "name": "P1010407",
+          "width": 5472,
+          "height": 3648
+        },
+        {
+          "src": "photos/Tahoe/P1010414.jpg",
+          "thumb": "photos/_thumbs/Tahoe/P1010414.jpg",
+          "name": "P1010414",
           "width": 5472,
           "height": 3648
         }
