@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-26 08:40:31",
+  "generatedAt": "2026-05-11 11:47:27",
   "thumbWidth": 600,
   "groups": [
     {
@@ -72,6 +72,63 @@
           "src": "photos/Cambell 26'/P1020639.jpg",
           "thumb": "photos/_thumbs/Cambell 26'/P1020639.jpg",
           "name": "P1020639",
+          "width": 5472,
+          "height": 3648
+        }
+      ]
+    },
+    {
+      "id": "Camp & Rave",
+      "name": "Camp & Rave",
+      "cover": "photos/Camp & Rave/P1020833.jpg",
+      "coverThumb": "photos/_thumbs/Camp & Rave/P1020833.jpg",
+      "photos": [
+        "photos/Camp & Rave/P1020833.jpg",
+        "photos/Camp & Rave/P1020843.jpg",
+        "photos/Camp & Rave/P1020885.jpg",
+        "photos/Camp & Rave/P1020900.jpg",
+        "photos/Camp & Rave/P1020901.jpg"
+      ],
+      "thumbs": [
+        "photos/_thumbs/Camp & Rave/P1020833.jpg",
+        "photos/_thumbs/Camp & Rave/P1020843.jpg",
+        "photos/_thumbs/Camp & Rave/P1020885.jpg",
+        "photos/_thumbs/Camp & Rave/P1020900.jpg",
+        "photos/_thumbs/Camp & Rave/P1020901.jpg"
+      ],
+      "items": [
+        {
+          "src": "photos/Camp & Rave/P1020833.jpg",
+          "thumb": "photos/_thumbs/Camp & Rave/P1020833.jpg",
+          "name": "P1020833",
+          "width": 5472,
+          "height": 3648
+        },
+        {
+          "src": "photos/Camp & Rave/P1020843.jpg",
+          "thumb": "photos/_thumbs/Camp & Rave/P1020843.jpg",
+          "name": "P1020843",
+          "width": 5472,
+          "height": 3648
+        },
+        {
+          "src": "photos/Camp & Rave/P1020885.jpg",
+          "thumb": "photos/_thumbs/Camp & Rave/P1020885.jpg",
+          "name": "P1020885",
+          "width": 3648,
+          "height": 5472
+        },
+        {
+          "src": "photos/Camp & Rave/P1020900.jpg",
+          "thumb": "photos/_thumbs/Camp & Rave/P1020900.jpg",
+          "name": "P1020900",
+          "width": 5472,
+          "height": 3648
+        },
+        {
+          "src": "photos/Camp & Rave/P1020901.jpg",
+          "thumb": "photos/_thumbs/Camp & Rave/P1020901.jpg",
+          "name": "P1020901",
           "width": 5472,
           "height": 3648
         }
