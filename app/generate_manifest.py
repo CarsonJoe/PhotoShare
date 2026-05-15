@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import json
 import os
+import re
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -24,7 +25,7 @@ MAX_THUMB_WIDTH = 600
 
 
 def load_settings():
-    defaults = {"favorites": [], "hiddenPhotos": [], "privateGroups": []}
+    defaults = {"favorites": [], "hiddenPhotos": [], "collectionDates": {}, "privateGroups": []}
     if not SETTINGS_PATH.exists():
         return defaults
     try:
@@ -35,8 +36,27 @@ def load_settings():
     return {
         "favorites": [str(v) for v in data.get("favorites", []) if v],
         "hiddenPhotos": [str(v) for v in data.get("hiddenPhotos", []) if v],
+        "collectionDates": {
+            str(k): str(v)
+            for k, v in (data.get("collectionDates", {}) or {}).items()
+            if k and v
+        },
         "privateGroups": [str(v) for v in data.get("privateGroups", []) if v],
     }
+
+
+def clean_group_name(name: str) -> str:
+    pretty = name.replace("_", " ").strip()
+    return re.sub(r"\s+(?:[SsFfWw]\s*)?\d{2}'?$", "", pretty).strip() or pretty
+
+
+def format_collection_date(value: str) -> str:
+    if not value:
+        return ""
+    try:
+        return datetime.strptime(value, "%Y-%m").strftime("%B %Y")
+    except ValueError:
+        return value
 
 
 def ensure_thumbnail(src: Path, dst: Path):
@@ -68,6 +88,7 @@ groups = []
 settings = load_settings()
 hidden_photos = set(settings["hiddenPhotos"])
 private_groups = set(settings["privateGroups"])
+collection_dates = settings["collectionDates"]
 for group_dir in sorted(PHOTOS_DIR.iterdir()):
     if not group_dir.is_dir() or group_dir.name == "_thumbs":
         continue
@@ -99,7 +120,9 @@ for group_dir in sorted(PHOTOS_DIR.iterdir()):
 
     groups.append({
         "id": group_dir.name,
-        "name": group_dir.name.replace("_", " "),
+        "name": clean_group_name(group_dir.name),
+        "collectionDate": format_collection_date(collection_dates.get(group_dir.name, "")),
+        "collectionMonth": collection_dates.get(group_dir.name, ""),
         "visibility": "private" if group_dir.name in private_groups else "public",
         "cover": rel_photos[0] if rel_photos else None,
         "coverThumb": rel_thumbs[0] if rel_thumbs else None,

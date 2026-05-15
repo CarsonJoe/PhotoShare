@@ -26,13 +26,6 @@
 
     <main class="container home-container">
       <section id="favorites" class="section-shell favorites-section" data-reveal>
-        <div class="section-heading home-section-heading">
-          <div>
-            <p class="eyebrow">Selected Frames</p>
-            <h2 class="section-title">Favorites</h2>
-          </div>
-          <a id="openFavorites" class="text-link" href="group.html?g=favorites" hidden>Open Collection</a>
-        </div>
         <div id="favoritesGrid" class="favorites-grid" aria-live="polite"></div>
         <div id="favoritesEmpty" class="empty minimal-empty" hidden>
           <p>Manage favorites in the local photo manager.</p>
@@ -65,9 +58,13 @@
         const groupsEl = document.getElementById('groups');
         const favoritesGridEl = document.getElementById('favoritesGrid');
         const favoritesEmptyEl = document.getElementById('favoritesEmpty');
-        const openFavoritesEl = document.getElementById('openFavorites');
         const emptyEl = document.getElementById('emptyState');
         const genEl = document.getElementById('generatedAt');
+        let favoritesRotationIndex = 0;
+        let favoritesRotationTimer = null;
+        let favoritesResizeTimer = null;
+        let favoritesTileCursor = 0;
+        let favoritesShuffleSeed = Math.random();
 
         PhotoShare.setBusyState(true, 'Loading archive...');
         PhotoShare.renderSkeletons(groupsEl, { count: 6, kind: 'group' });
@@ -132,36 +129,222 @@
         }
 
         window.addEventListener('photoshare:favorites-changed', () => renderFavorites(groups));
+        window.addEventListener('resize', () => {
+          if (favoritesResizeTimer) clearTimeout(favoritesResizeTimer);
+          favoritesResizeTimer = setTimeout(() => renderFavorites(groups), 180);
+        });
         PhotoShare.setBusyState(false, 'Archive ready');
 
         function renderFavorites(sourceGroups) {
-          const favorites = PhotoShare.getFavoriteItems(sourceGroups);
+          const favorites = shuffleFavorites(PhotoShare.getFavoriteItems(sourceGroups));
           favoritesGridEl.innerHTML = '';
+          favoritesTileCursor = 0;
+          favoritesGridEl.hidden = favorites.length === 0;
           favoritesEmptyEl.hidden = favorites.length > 0;
-          openFavoritesEl.hidden = favorites.length === 0;
 
-          favorites.slice(0, 9).forEach((item, index) => {
-            const link = document.createElement('a');
-            link.className = 'favorite-tile';
-            link.href = `group.html?g=favorites&p=${index + 1}`;
-            link.setAttribute(
+          if (favoritesRotationTimer) {
+            clearInterval(favoritesRotationTimer);
+            favoritesRotationTimer = null;
+          }
+
+          if (!favorites.length) return;
+
+          mountFavorites(favorites);
+
+          if (favorites.length > getVisibleFavoriteCount(favorites.length)) {
+            favoritesRotationTimer = setInterval(() => {
+              rotateSimilarFavorite(favorites);
+            }, 7000);
+          }
+        }
+
+        function shuffleFavorites(items) {
+          const shuffled = items.map((item, index) => ({ item, index }));
+          let seed = favoritesShuffleSeed || 0.5;
+          const random = () => {
+            seed = (seed * 9301 + 49297) % 233280;
+            return seed / 233280;
+          };
+
+          for (let index = shuffled.length - 1; index > 0; index -= 1) {
+            const swapIndex = Math.floor(random() * (index + 1));
+            [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]];
+          }
+
+          return shuffled.map(({ item, index }) => ({
+            ...item,
+            favoriteIndex: index,
+          }));
+        }
+
+        function getVisibleFavoriteCount(total) {
+          const width = window.innerWidth || document.documentElement.clientWidth || 1200;
+          const desired = width < 640 ? 4 : width < 980 ? 5 : 7;
+          return Math.max(1, Math.min(total, desired));
+        }
+
+        function getAspect(item) {
+          const width = Number(item.width) || 3;
+          const height = Number(item.height) || 2;
+          return Math.max(0.45, Math.min(2.8, width / height));
+        }
+
+        function getObjectPosition(item, index) {
+          const aspect = getAspect(item);
+          if (aspect < 0.78) return 'center 38%';
+          if (aspect > 1.8) return index % 2 ? '55% center' : '45% center';
+          return 'center center';
+        }
+
+        function getVisibleFavorites(favorites) {
+          const count = getVisibleFavoriteCount(favorites.length);
+          return Array.from({ length: count }, (_, offset) => {
+            const index = (favoritesRotationIndex + offset) % favorites.length;
+            return { item: favorites[index], originalIndex: favorites[index].favoriteIndex ?? index };
+          });
+        }
+
+        function getActiveFavoriteIndices() {
+          return Array.from(favoritesGridEl.querySelectorAll('.favorite-tile'))
+            .map((tile) => Number(tile.dataset.favoriteIndex))
+            .filter(Number.isFinite);
+        }
+
+        function findSimilarTile(candidate, activeIndices) {
+          const candidateAspect = getAspect(candidate.item);
+          const activeSet = new Set(activeIndices);
+          const candidates = Array.from(favoritesGridEl.querySelectorAll('.favorite-tile'))
+            .filter((tile) => !tile.classList.contains('is-swapping'))
+            .map((tile) => {
+              const activeIndex = Number(tile.dataset.favoriteIndex);
+              if (!activeSet.has(activeIndex)) return null;
+              const activeAspect = Number(tile.dataset.aspect);
+              const distance = Math.abs(activeAspect - candidateAspect);
+              const tolerance = Math.max(0.14, Math.min(activeAspect, candidateAspect) * 0.22);
+              const slot = Number(tile.dataset.tileSlot) || 0;
+              const slotDistance =
+                (slot - favoritesTileCursor + Math.max(activeIndices.length, 1)) %
+                Math.max(activeIndices.length, 1);
+              return distance <= tolerance ? { tile, distance, slotDistance } : null;
+            })
+            .filter(Boolean)
+            .sort((a, b) => a.slotDistance - b.slotDistance || a.distance - b.distance);
+
+          return candidates[0] ? candidates[0].tile : null;
+        }
+
+        function getNextSidelinedFavorite(favorites, activeIndices) {
+          const activeSet = new Set(activeIndices);
+          for (let offset = 1; offset <= favorites.length; offset += 1) {
+            const index = (favoritesRotationIndex + offset) % favorites.length;
+            const originalIndex = favorites[index].favoriteIndex ?? index;
+            if (!activeSet.has(originalIndex)) {
+              return { item: favorites[index], originalIndex };
+            }
+          }
+          return null;
+        }
+
+        function rotateSimilarFavorite(favorites) {
+          const activeIndices = getActiveFavoriteIndices();
+          if (activeIndices.length >= favorites.length) return;
+
+          const replacement = getNextSidelinedFavorite(favorites, activeIndices);
+          if (!replacement) return;
+
+          const tile = findSimilarTile(replacement, activeIndices);
+          favoritesRotationIndex = (replacement.originalIndex + 1) % favorites.length;
+
+          if (!tile) return;
+          favoritesTileCursor =
+            ((Number(tile.dataset.tileSlot) || 0) + 1) % Math.max(activeIndices.length, 1);
+          swapFavoriteTile(tile, replacement);
+        }
+
+        function swapFavoriteTile(tile, replacement) {
+          const oldImg = tile.querySelector('img');
+          if (!oldImg) return;
+
+          const newImg = document.createElement('img');
+          newImg.loading = 'lazy';
+          newImg.decoding = 'async';
+          newImg.alt = '';
+          newImg.src = PhotoShare.relativeAsset(replacement.item.thumb || replacement.item.src);
+          newImg.style.objectPosition = getObjectPosition(replacement.item, replacement.originalIndex);
+          newImg.className = 'favorite-tile-next';
+
+          const commit = () => {
+            tile.href = `group.html?g=favorites&p=${replacement.originalIndex + 1}`;
+            tile.dataset.favoriteIndex = String(replacement.originalIndex);
+            tile.dataset.aspect = String(getAspect(replacement.item));
+            tile.style.setProperty('--tile-weight', String(getAspect(replacement.item)));
+            tile.setAttribute(
               'aria-label',
-              `${item.sourceGroupName || 'Favorite'} photo ${index + 1}`
+              `${replacement.item.sourceGroupName || 'Favorite'} photo ${
+                replacement.originalIndex + 1
+              }`
             );
+            oldImg.remove();
+            newImg.classList.remove('favorite-tile-next');
+            tile.classList.remove('is-swapping');
+          };
 
-            const img = document.createElement('img');
-            img.loading = index < 4 ? 'eager' : 'lazy';
-            img.decoding = 'async';
-            img.fetchPriority = index < 3 ? 'high' : 'auto';
-            img.alt = '';
-            img.src = PhotoShare.relativeAsset(item.thumb || item.src);
+          tile.classList.add('is-swapping');
+          tile.appendChild(newImg);
 
-            const meta = document.createElement('span');
-            meta.className = 'favorite-meta';
-            meta.textContent = item.sourceGroupName || 'Favorite';
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              newImg.classList.add('is-visible');
+              oldImg.classList.add('is-fading');
+            });
+          });
 
-            link.append(img, meta);
-            favoritesGridEl.appendChild(link);
+          window.setTimeout(commit, 720);
+        }
+
+        function splitFavoriteRows(visible) {
+          if (visible.length <= 1) return [visible, []];
+          const topCount = Math.max(1, Math.floor(visible.length / 2));
+          return [visible.slice(0, topCount), visible.slice(topCount)];
+        }
+
+        function mountFavorites(favorites) {
+          const rows = splitFavoriteRows(getVisibleFavorites(favorites));
+          favoritesGridEl.innerHTML = '';
+          let tileSlot = 0;
+
+          rows.forEach((row, rowIndex) => {
+            const rowEl = document.createElement('div');
+            rowEl.className = 'favorites-row';
+            rowEl.dataset.row = String(rowIndex + 1);
+
+            row.forEach(({ item, originalIndex }, index) => {
+              const link = document.createElement('a');
+              link.className = 'favorite-tile';
+              link.href = `group.html?g=favorites&p=${originalIndex + 1}`;
+              link.dataset.favoriteIndex = String(originalIndex);
+              link.dataset.aspect = String(getAspect(item));
+              link.dataset.tileSlot = String(tileSlot);
+              tileSlot += 1;
+              link.style.setProperty('--tile-weight', String(getAspect(item)));
+              link.setAttribute(
+                'aria-label',
+                `${item.sourceGroupName || 'Favorite'} photo ${originalIndex + 1}`
+              );
+
+              const img = document.createElement('img');
+              img.loading = rowIndex === 0 && index < 3 ? 'eager' : 'lazy';
+              img.decoding = 'async';
+              img.fetchPriority = rowIndex === 0 && index < 2 ? 'high' : 'auto';
+              img.alt = '';
+              img.src = PhotoShare.relativeAsset(item.thumb || item.src);
+              img.style.objectPosition = getObjectPosition(item, index + rowIndex);
+
+              link.append(img);
+              rowEl.appendChild(link);
+            });
+
+            favoritesGridEl.appendChild(rowEl);
           });
         }
       });

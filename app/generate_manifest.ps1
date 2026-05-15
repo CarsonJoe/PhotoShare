@@ -10,6 +10,22 @@ function Ensure-Dir([string]$p){
   if (-not (Test-Path $p)) { New-Item -ItemType Directory -Path $p | Out-Null }
 }
 
+function Clean-GroupName([string]$name){
+  $pretty = ($name -replace '_',' ').Trim()
+  $clean = ($pretty -replace '\s+(?:[SsFfWw]\s*)?\d{2}''?$', '').Trim()
+  if ($clean) { return $clean }
+  return $pretty
+}
+
+function Format-CollectionDate([string]$value){
+  if (-not $value) { return '' }
+  try {
+    return ([datetime]::ParseExact($value, 'yyyy-MM', [Globalization.CultureInfo]::InvariantCulture)).ToString('MMMM yyyy')
+  } catch {
+    return $value
+  }
+}
+
 # Load System.Drawing for image processing (Windows-only)
 Add-Type -AssemblyName System.Drawing
 # Optionally load WPF imaging for WIC thumbnail fallback (if available)
@@ -108,7 +124,7 @@ Ensure-Dir $thumbsDir
 $allowed = @('.jpg','.jpeg','.png','.gif','.webp','.JPG','.JPEG','.PNG','.GIF','.WEBP')
 $maxThumbWidth = 600
 
-$settings = [PSCustomObject]@{ favorites = @(); hiddenPhotos = @(); privateGroups = @() }
+$settings = [PSCustomObject]@{ favorites = @(); hiddenPhotos = @(); collectionDates = [PSCustomObject]@{}; privateGroups = @() }
 if (Test-Path -LiteralPath $settingsPath) {
   try {
     $settings = Get-Content -LiteralPath $settingsPath -Raw | ConvertFrom-Json
@@ -120,6 +136,12 @@ $hiddenPhotos = @{}
 @($settings.hiddenPhotos) | ForEach-Object { if ($_){ $hiddenPhotos[[string]$_] = $true } }
 $privateGroups = @{}
 @($settings.privateGroups) | ForEach-Object { if ($_){ $privateGroups[[string]$_] = $true } }
+$collectionDates = @{}
+if ($settings.collectionDates) {
+  $settings.collectionDates.PSObject.Properties | ForEach-Object {
+    if ($_.Name -and $_.Value) { $collectionDates[[string]$_.Name] = [string]$_.Value }
+  }
+}
 
 $groups = @()
 Get-ChildItem -Path $photosDir -Directory | Where-Object { $_.Name -ne '_thumbs' } | ForEach-Object {
@@ -152,7 +174,9 @@ Get-ChildItem -Path $photosDir -Directory | Where-Object { $_.Name -ne '_thumbs'
   $coverThumb = if ($relThumbs.Count -gt 0) { $relThumbs[0] } else { $null }
   $groups += [PSCustomObject]@{
     id = $group.Name
-    name = ($group.Name -replace '_',' ')
+    name = (Clean-GroupName $group.Name)
+    collectionDate = (Format-CollectionDate $collectionDates[$group.Name])
+    collectionMonth = $collectionDates[$group.Name]
     visibility = if ($privateGroups.ContainsKey($group.Name)) { 'private' } else { 'public' }
     cover = $cover
     coverThumb = $coverThumb

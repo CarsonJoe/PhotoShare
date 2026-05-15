@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-15 14:14:59",
+  "generatedAt": "2026-05-15 16:25:23",
   "thumbWidth": 600,
   "favorites": [
     "photos/Alaska/P1010650.jpg",
@@ -17,6 +17,8 @@
     {
       "id": "Alaska",
       "name": "Alaska",
+      "collectionDate": "",
+      "collectionMonth": "",
       "visibility": "public",
       "cover": "photos/Alaska/P1010453.jpg",
       "coverThumb": "photos/_thumbs/Alaska/P1010453.jpg",
@@ -110,7 +112,9 @@
     },
     {
       "id": "Cambell 26'",
-      "name": "Cambell 26'",
+      "name": "Cambell",
+      "collectionDate": "",
+      "collectionMonth": "",
       "visibility": "public",
       "cover": "photos/Cambell 26'/P1020592.jpg",
       "coverThumb": "photos/_thumbs/Cambell 26'/P1020592.jpg",
@@ -187,6 +191,8 @@
     {
       "id": "Camp & Rave",
       "name": "Camp & Rave",
+      "collectionDate": "",
+      "collectionMonth": "",
       "visibility": "private",
       "cover": "photos/Camp & Rave/P1020833.jpg",
       "coverThumb": "photos/_thumbs/Camp & Rave/P1020833.jpg",
@@ -244,7 +250,9 @@
     },
     {
       "id": "Colorado S25'",
-      "name": "Colorado S25'",
+      "name": "Colorado",
+      "collectionDate": "",
+      "collectionMonth": "",
       "visibility": "public",
       "cover": "photos/Colorado S25'/P1020289.jpg",
       "coverThumb": "photos/_thumbs/Colorado S25'/P1020289.jpg",
@@ -356,7 +364,9 @@
     },
     {
       "id": "Glacier S25'",
-      "name": "Glacier S25'",
+      "name": "Glacier",
+      "collectionDate": "",
+      "collectionMonth": "",
       "visibility": "public",
       "cover": "photos/Glacier S25'/P1010897.jpg",
       "coverThumb": "photos/_thumbs/Glacier S25'/P1010897.jpg",
@@ -477,7 +487,9 @@
     },
     {
       "id": "Jackson Hole S25'",
-      "name": "Jackson Hole S25'",
+      "name": "Jackson Hole",
+      "collectionDate": "",
+      "collectionMonth": "",
       "visibility": "public",
       "cover": "photos/Jackson Hole S25'/P1010988.JPG",
       "coverThumb": "photos/_thumbs/Jackson Hole S25'/P1010988.jpg",
@@ -563,6 +575,8 @@
     {
       "id": "Lassen",
       "name": "Lassen",
+      "collectionDate": "",
+      "collectionMonth": "",
       "visibility": "public",
       "cover": "photos/Lassen/P1010762.jpg",
       "coverThumb": "photos/_thumbs/Lassen/P1010762.jpg",
@@ -602,7 +616,9 @@
     },
     {
       "id": "Moab S25'",
-      "name": "Moab S25'",
+      "name": "Moab",
+      "collectionDate": "",
+      "collectionMonth": "",
       "visibility": "public",
       "cover": "photos/Moab S25'/P1020056.jpg",
       "coverThumb": "photos/_thumbs/Moab S25'/P1020056.jpg",
@@ -768,7 +784,9 @@
     },
     {
       "id": "Pinnacles s26'",
-      "name": "Pinnacles s26'",
+      "name": "Pinnacles",
+      "collectionDate": "",
+      "collectionMonth": "",
       "visibility": "public",
       "cover": "photos/Pinnacles s26'/P1020660.jpg",
       "coverThumb": "photos/_thumbs/Pinnacles s26'/P1020660.jpg",
@@ -854,6 +872,8 @@
     {
       "id": "Tahoe",
       "name": "Tahoe",
+      "collectionDate": "",
+      "collectionMonth": "",
       "visibility": "public",
       "cover": "photos/Tahoe/P1010232.jpg",
       "coverThumb": "photos/_thumbs/Tahoe/P1010232.jpg",
@@ -920,7 +940,9 @@
     },
     {
       "id": "Uinta Wasach-Cache NF S25'",
-      "name": "Uinta Wasach-Cache NF S25'",
+      "name": "Uinta Wasach-Cache NF",
+      "collectionDate": "",
+      "collectionMonth": "",
       "visibility": "public",
       "cover": "photos/Uinta Wasach-Cache NF S25'/P1020030.jpg",
       "coverThumb": "photos/_thumbs/Uinta Wasach-Cache NF S25'/P1020030.jpg",
@@ -961,6 +983,8 @@
     {
       "id": "Zion",
       "name": "Zion",
+      "collectionDate": "",
+      "collectionMonth": "",
       "visibility": "public",
       "cover": "photos/Zion/P1020441.jpg",
       "coverThumb": "photos/_thumbs/Zion/P1020441.jpg",

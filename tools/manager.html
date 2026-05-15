@@ -163,6 +163,22 @@
         gap: 8px;
       }
 
+      .date-field {
+        display: grid;
+        gap: 4px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .date-field input {
+        min-height: 36px;
+        border: 1px solid var(--border);
+        background: #0b0f14;
+        color: var(--fg);
+        padding: 7px 8px;
+        font: inherit;
+      }
+
       .collection-row {
         justify-content: space-between;
       }
@@ -354,6 +370,10 @@
               <p id="groupMeta" class="muted"></p>
             </div>
             <div class="inline-actions">
+              <label class="date-field">
+                <span>Month / Year</span>
+                <input id="collectionMonth" type="month" />
+              </label>
               <a id="directLink" class="btn" href="#" target="_blank" rel="noopener" hidden>Direct Link</a>
               <button id="btnVisibility" class="btn" type="button" disabled>Make Private</button>
             </div>
@@ -369,7 +389,7 @@
     </div>
 
     <script>
-      const Defaults = { favorites: [], hiddenPhotos: [], privateGroups: [] };
+      const Defaults = { favorites: [], hiddenPhotos: [], collectionDates: {}, privateGroups: [] };
 
       const collectionsEl = document.getElementById('collections');
       const photosEl = document.getElementById('photos');
@@ -378,6 +398,7 @@
       const groupTitleEl = document.getElementById('groupTitle');
       const groupMetaEl = document.getElementById('groupMeta');
       const directLinkEl = document.getElementById('directLink');
+      const collectionMonthEl = document.getElementById('collectionMonth');
       const btnVisibility = document.getElementById('btnVisibility');
       const btnSave = document.getElementById('btnSave');
       const orphanHiddenPanel = document.getElementById('orphanHiddenPanel');
@@ -397,6 +418,9 @@
         return {
           favorites: Array.from(new Set((value.favorites || []).filter(Boolean).map(String))),
           hiddenPhotos: Array.from(new Set((value.hiddenPhotos || []).filter(Boolean).map(String))),
+          collectionDates: Object.fromEntries(
+            Object.entries(value.collectionDates || {}).filter((entry) => entry[0] && entry[1])
+          ),
           privateGroups: Array.from(new Set((value.privateGroups || []).filter(Boolean).map(String))),
         };
       }
@@ -432,6 +456,17 @@
 
       function isPrivate(groupId) {
         return settings.privateGroups.includes(groupId);
+      }
+
+      function getCollectionMonth(groupId) {
+        return (settings.collectionDates && settings.collectionDates[groupId]) || '';
+      }
+
+      function setCollectionMonth(groupId, value) {
+        settings.collectionDates = settings.collectionDates || {};
+        if (value) settings.collectionDates[groupId] = value;
+        else delete settings.collectionDates[groupId];
+        setDirty(true);
       }
 
       function setMembership(listName, value, enabled) {
@@ -643,6 +678,8 @@
           groupTitleEl.textContent = 'No Collection Selected';
           groupMetaEl.textContent = '';
           btnVisibility.disabled = true;
+          collectionMonthEl.disabled = true;
+          collectionMonthEl.value = '';
           directLinkEl.hidden = true;
           photosEl.innerHTML = '';
           return;
@@ -654,6 +691,8 @@
           ? 'Private collections are hidden from home navigation but available by direct link.'
           : 'Public collections are visible on the home page.';
         btnVisibility.disabled = false;
+        collectionMonthEl.disabled = false;
+        collectionMonthEl.value = getCollectionMonth(activeGroup.id);
         btnVisibility.textContent = privateGroup ? 'Make Public' : 'Make Private';
         directLinkEl.hidden = false;
         directLinkEl.href = `../app/group.html?g=${encodeURIComponent(activeGroup.id)}`;
@@ -664,6 +703,11 @@
       btnVisibility.addEventListener('click', () => {
         if (!activeGroupId) return;
         setMembership('privateGroups', activeGroupId, !isPrivate(activeGroupId));
+      });
+      collectionMonthEl.addEventListener('change', () => {
+        if (!activeGroupId) return;
+        setCollectionMonth(activeGroupId, collectionMonthEl.value);
+        render();
       });
       btnSave.addEventListener('click', saveSettings);
       document.getElementById('btnLoadFetch').addEventListener('click', () => {

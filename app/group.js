@@ -117,14 +117,11 @@
       headerTitleEl.textContent = `${group.name} / ${items.length} frames`;
       if (lbAlbumName) lbAlbumName.textContent = group.name;
 
-      const formattedDate = data.generatedAt
-        ? PhotoShare.formatTimestamp(data.generatedAt)
-        : 'Recently updated';
       const formattedDateWithTime = data.generatedAt
         ? PhotoShare.formatTimestamp(data.generatedAt, { includeTime: true })
         : '';
 
-      galleryMetaEl.textContent = `${items.length} photo${items.length === 1 ? '' : 's'} / ${formattedDate}`;
+      galleryMetaEl.textContent = group.collectionDate || '';
       genEl.textContent = formattedDateWithTime ? `Updated ${formattedDateWithTime}` : '';
 
       const SharePresets = {
@@ -429,12 +426,29 @@
         }
       });
 
-      photosEl.innerHTML = '';
+      function getPhotoColumnCount() {
+        const width = photosEl.clientWidth || window.innerWidth || 1200;
+        if (width < 560) return 2;
+        if (width < 920) return 3;
+        if (width < 1260) return 4;
+        return 5;
+      }
 
-      items.forEach((item, index) => {
+      function getPhotoAspect(item) {
+        const width = Number(item.width) || 3;
+        const height = Number(item.height) || 2;
+        return Math.max(0.45, Math.min(2.8, width / height));
+      }
+
+      function estimatePhotoHeight(item, columnWidth) {
+        return columnWidth / getPhotoAspect(item);
+      }
+
+      function createPhotoCard(item, index) {
         const card = document.createElement('article');
         card.className = 'photo-card';
         card.dataset.index = String(index);
+        card.classList.toggle('selected', selected.has(index));
 
         const indicator = document.createElement('div');
         indicator.className = 'select-indicator';
@@ -472,7 +486,46 @@
         media.append(img);
         link.append(media);
         card.append(indicator, link);
-        photosEl.appendChild(card);
+        return card;
+      }
+
+      function renderPhotoGrid() {
+        const columnCount = Math.min(items.length || 1, getPhotoColumnCount());
+        const gap = 8;
+        const gridWidth = photosEl.clientWidth || window.innerWidth || 1200;
+        const columnWidth = (gridWidth - gap * Math.max(columnCount - 1, 0)) / columnCount;
+        const columns = Array.from({ length: columnCount }, (_, index) => ({
+          left: index * (columnWidth + gap),
+          height: 0,
+        }));
+
+        photosEl.innerHTML = '';
+        photosEl.style.setProperty('--photo-columns', String(columnCount));
+        photosEl.style.setProperty('--photo-column-width', `${columnWidth}px`);
+
+        items.forEach((item, index) => {
+          const target = columns.reduce((shortest, column) =>
+            column.height < shortest.height ? column : shortest
+          );
+          const card = createPhotoCard(item, index);
+          const height = estimatePhotoHeight(item, columnWidth);
+          card.style.left = `${target.left}px`;
+          card.style.top = `${target.height}px`;
+          card.style.width = `${columnWidth}px`;
+          photosEl.appendChild(card);
+          target.height += height + gap;
+        });
+
+        const tallest = columns.reduce((max, column) => Math.max(max, column.height), 0);
+        photosEl.style.height = `${Math.max(0, tallest - gap)}px`;
+      }
+
+      renderPhotoGrid();
+
+      let photoGridResizeTimer = null;
+      window.addEventListener('resize', () => {
+        if (photoGridResizeTimer) window.clearTimeout(photoGridResizeTimer);
+        photoGridResizeTimer = window.setTimeout(renderPhotoGrid, 180);
       });
 
       function normalizeIndex(index) {
