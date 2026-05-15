@@ -1,0 +1,687 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PhotoShare Manager</title>
+    <style>
+      :root {
+        --bg: #0b0c0f;
+        --panel: #11151a;
+        --panel-2: #0f1318;
+        --muted: #9aa3af;
+        --fg: #f3f4f6;
+        --accent: #22c55e;
+        --warn: #f59e0b;
+        --danger: #f87171;
+        --border: #1f2937;
+      }
+
+      * {
+        box-sizing: border-box;
+        border-radius: 0 !important;
+      }
+
+      html,
+      body {
+        min-height: 100%;
+        margin: 0;
+        background: var(--bg);
+        color: var(--fg);
+        font-family: system-ui, "Segoe UI", Roboto, Inter, Arial, sans-serif;
+      }
+
+      body {
+        display: grid;
+        grid-template-rows: auto 1fr;
+      }
+
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--border);
+        background: rgba(17, 21, 26, 0.92);
+        backdrop-filter: blur(8px);
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        font-size: 16px;
+      }
+
+      h2 {
+        font-size: 14px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      h3 {
+        font-size: 14px;
+      }
+
+      a {
+        color: inherit;
+      }
+
+      .spacer {
+        flex: 1;
+      }
+
+      .btn {
+        appearance: none;
+        min-height: 36px;
+        border: 1px solid var(--border);
+        background: #0f172a;
+        color: #e5e7eb;
+        padding: 8px 10px;
+        cursor: pointer;
+        text-decoration: none;
+        font: inherit;
+      }
+
+      .btn.primary {
+        background: var(--accent);
+        border-color: #16a34a;
+        color: #08110a;
+        font-weight: 700;
+      }
+
+      .btn:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: 300px minmax(0, 1fr);
+        min-height: 0;
+      }
+
+      .sidebar,
+      .content {
+        min-height: 0;
+        overflow: auto;
+      }
+
+      .sidebar {
+        border-right: 1px solid var(--border);
+        background: var(--panel);
+      }
+
+      .summary {
+        display: grid;
+        gap: 6px;
+        padding: 12px;
+        border-bottom: 1px solid var(--border);
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .collections {
+        list-style: none;
+        display: grid;
+        gap: 4px;
+        margin: 0;
+        padding: 8px;
+      }
+
+      .collection {
+        width: 100%;
+        display: grid;
+        gap: 4px;
+        padding: 10px;
+        border: 1px solid var(--border);
+        background: var(--panel-2);
+        color: inherit;
+        text-align: left;
+        cursor: pointer;
+      }
+
+      .collection.active {
+        outline: 2px solid var(--accent);
+        outline-offset: -2px;
+      }
+
+      .collection-row,
+      .toolbar,
+      .group-header,
+      .photo-actions,
+      .inline-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .collection-row {
+        justify-content: space-between;
+      }
+
+      .muted,
+      .status {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        min-height: 22px;
+        padding: 2px 7px;
+        border: 1px solid var(--border);
+        color: var(--muted);
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .badge.public {
+        color: #86efac;
+      }
+
+      .badge.private {
+        color: #fbbf24;
+      }
+
+      .content {
+        display: grid;
+        grid-template-rows: auto 1fr;
+        background: #0b0f14;
+      }
+
+      .top-panel {
+        display: grid;
+        gap: 12px;
+        padding: 14px;
+        border-bottom: 1px solid var(--border);
+        background: var(--panel);
+      }
+
+      .group-header {
+        justify-content: space-between;
+        align-items: flex-start;
+      }
+
+      .photos {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 8px;
+        padding: 8px;
+      }
+
+      .photo {
+        position: relative;
+        display: grid;
+        grid-template-rows: minmax(150px, 1fr) auto;
+        min-height: 250px;
+        border: 1px solid var(--border);
+        background: var(--panel-2);
+        overflow: hidden;
+      }
+
+      .photo.hidden-photo {
+        opacity: 0.45;
+      }
+
+      .photo.favorite-photo {
+        outline: 2px solid var(--accent);
+        outline-offset: -2px;
+      }
+
+      .photo img {
+        width: 100%;
+        height: 100%;
+        display: block;
+        object-fit: cover;
+        background: #0b0f14;
+      }
+
+      .photo-body {
+        display: grid;
+        gap: 8px;
+        padding: 9px;
+      }
+
+      .photo-name {
+        overflow: hidden;
+        color: #e5e7eb;
+        font-size: 12px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .photo-actions {
+        flex-wrap: wrap;
+      }
+
+      .toggle {
+        appearance: none;
+        min-height: 32px;
+        border: 1px solid var(--border);
+        background: #0b0f14;
+        color: #d1d5db;
+        padding: 6px 8px;
+        cursor: pointer;
+        font: inherit;
+        font-size: 12px;
+      }
+
+      .toggle.active {
+        background: var(--accent);
+        border-color: #16a34a;
+        color: #08110a;
+        font-weight: 700;
+      }
+
+      .toggle.danger.active {
+        background: var(--danger);
+        border-color: #ef4444;
+        color: #1f0808;
+      }
+
+      .paths {
+        display: grid;
+        gap: 6px;
+        margin-top: 8px;
+      }
+
+      .path-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 8px;
+        border: 1px solid var(--border);
+        background: #0b0f14;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      @media (max-width: 820px) {
+        header {
+          align-items: stretch;
+          flex-wrap: wrap;
+        }
+
+        .layout {
+          grid-template-columns: 1fr;
+        }
+
+        .sidebar {
+          max-height: 38vh;
+          border-right: 0;
+          border-bottom: 1px solid var(--border);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>PhotoShare Manager</h1>
+      <div class="spacer"></div>
+      <a class="btn" href="editor.html">Photo Editor</a>
+      <a class="btn" href="../app/index.html">Open App</a>
+      <button id="btnLoadFetch" class="btn" type="button">Load Current</button>
+      <button id="btnOpenRepo" class="btn" type="button">Open Repo Folder</button>
+      <button id="btnSave" class="btn primary" type="button" disabled>Save Settings</button>
+    </header>
+
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="summary">
+          <span id="loadStatus">Load the current manifest or open the repo folder.</span>
+          <span id="counts"></span>
+          <span>Save writes <code>app/photo-settings.json</code>. Run publish afterward.</span>
+        </div>
+        <ul id="collections" class="collections"></ul>
+      </aside>
+
+      <main class="content">
+        <section class="top-panel">
+          <div class="group-header">
+            <div>
+              <h2 id="groupTitle">No Collection Selected</h2>
+              <p id="groupMeta" class="muted"></p>
+            </div>
+            <div class="inline-actions">
+              <a id="directLink" class="btn" href="#" target="_blank" rel="noopener" hidden>Direct Link</a>
+              <button id="btnVisibility" class="btn" type="button" disabled>Make Private</button>
+            </div>
+          </div>
+          <div id="orphanHiddenPanel" hidden>
+            <h3>Hidden Paths Not In Current Manifest</h3>
+            <div id="orphanHidden" class="paths"></div>
+          </div>
+        </section>
+
+        <section id="photos" class="photos" aria-live="polite"></section>
+      </main>
+    </div>
+
+    <script>
+      const Defaults = { favorites: [], hiddenPhotos: [], privateGroups: [] };
+
+      const collectionsEl = document.getElementById('collections');
+      const photosEl = document.getElementById('photos');
+      const loadStatusEl = document.getElementById('loadStatus');
+      const countsEl = document.getElementById('counts');
+      const groupTitleEl = document.getElementById('groupTitle');
+      const groupMetaEl = document.getElementById('groupMeta');
+      const directLinkEl = document.getElementById('directLink');
+      const btnVisibility = document.getElementById('btnVisibility');
+      const btnSave = document.getElementById('btnSave');
+      const orphanHiddenPanel = document.getElementById('orphanHiddenPanel');
+      const orphanHiddenEl = document.getElementById('orphanHidden');
+
+      let repoRoot = null;
+      let manifest = null;
+      let settings = structuredClone(Defaults);
+      let activeGroupId = '';
+      let dirty = false;
+
+      function fsAvailable() {
+        return 'showDirectoryPicker' in window;
+      }
+
+      function cleanSettings(value) {
+        return {
+          favorites: Array.from(new Set((value.favorites || []).filter(Boolean).map(String))),
+          hiddenPhotos: Array.from(new Set((value.hiddenPhotos || []).filter(Boolean).map(String))),
+          privateGroups: Array.from(new Set((value.privateGroups || []).filter(Boolean).map(String))),
+        };
+      }
+
+      function setDirty(value) {
+        dirty = value;
+        btnSave.disabled = !dirty || !repoRoot;
+      }
+
+      function groupItems(group) {
+        return Array.isArray(group && group.items) ? group.items : [];
+      }
+
+      function allGroups() {
+        return Array.isArray(manifest && manifest.groups) ? manifest.groups : [];
+      }
+
+      function allManifestPhotoSrcs() {
+        const paths = new Set();
+        allGroups().forEach((group) => {
+          groupItems(group).forEach((item) => paths.add(item.src));
+        });
+        return paths;
+      }
+
+      function isFavorite(src) {
+        return settings.favorites.includes(src);
+      }
+
+      function isHidden(src) {
+        return settings.hiddenPhotos.includes(src);
+      }
+
+      function isPrivate(groupId) {
+        return settings.privateGroups.includes(groupId);
+      }
+
+      function setMembership(listName, value, enabled) {
+        const set = new Set(settings[listName]);
+        if (enabled) set.add(value);
+        else set.delete(value);
+        settings[listName] = Array.from(set);
+        setDirty(true);
+        render();
+      }
+
+      function asset(path) {
+        return `../${String(path || 'app/placeholder.svg').replace(/^\.?\//, '')}`;
+      }
+
+      async function readJsonFromHandle(dir, pathParts, fallback) {
+        try {
+          let current = dir;
+          for (let i = 0; i < pathParts.length - 1; i += 1) {
+            current = await current.getDirectoryHandle(pathParts[i]);
+          }
+          const file = await (await current.getFileHandle(pathParts[pathParts.length - 1])).getFile();
+          return JSON.parse((await file.text()).replace(/^\uFEFF/, ''));
+        } catch {
+          return fallback;
+        }
+      }
+
+      async function writeJsonToHandle(dir, pathParts, data) {
+        let current = dir;
+        for (let i = 0; i < pathParts.length - 1; i += 1) {
+          current = await current.getDirectoryHandle(pathParts[i], { create: true });
+        }
+        const fileHandle = await current.getFileHandle(pathParts[pathParts.length - 1], {
+          create: true,
+        });
+        const writable = await fileHandle.createWritable();
+        await writable.write(`${JSON.stringify(data, null, 2)}\n`);
+        await writable.close();
+      }
+
+      async function loadFromFetch() {
+        const manifestRes = await fetch('../app/photos.json', { cache: 'no-cache' });
+        if (!manifestRes.ok) throw new Error(`photos.json: ${manifestRes.status}`);
+        manifest = JSON.parse((await manifestRes.text()).replace(/^\uFEFF/, ''));
+
+        try {
+          const settingsRes = await fetch('../app/photo-settings.json', { cache: 'no-cache' });
+          settings = settingsRes.ok
+            ? cleanSettings(JSON.parse((await settingsRes.text()).replace(/^\uFEFF/, '')))
+            : structuredClone(Defaults);
+        } catch {
+          settings = structuredClone(Defaults);
+        }
+
+        activeGroupId = allGroups()[0] ? allGroups()[0].id : '';
+        loadStatusEl.textContent = 'Loaded current app files. Open repo folder to save changes.';
+        setDirty(false);
+        render();
+      }
+
+      async function openRepoFolder() {
+        if (!fsAvailable()) {
+          alert('Use Chrome or Edge for saving manager changes.');
+          return;
+        }
+
+        repoRoot = await window.showDirectoryPicker();
+        manifest = await readJsonFromHandle(repoRoot, ['app', 'photos.json'], { groups: [] });
+        settings = cleanSettings(
+          await readJsonFromHandle(repoRoot, ['app', 'photo-settings.json'], Defaults)
+        );
+        activeGroupId = allGroups()[0] ? allGroups()[0].id : '';
+        loadStatusEl.textContent = 'Repo loaded. Settings can be saved.';
+        setDirty(false);
+        render();
+      }
+
+      async function saveSettings() {
+        if (!repoRoot) {
+          alert('Open the repo folder first so the manager can write app/photo-settings.json.');
+          return;
+        }
+        await writeJsonToHandle(repoRoot, ['app', 'photo-settings.json'], cleanSettings(settings));
+        loadStatusEl.textContent = 'Saved app/photo-settings.json. Run publish to regenerate the app.';
+        setDirty(false);
+      }
+
+      function renderCollections() {
+        collectionsEl.innerHTML = '';
+        allGroups().forEach((group) => {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.className = `collection${group.id === activeGroupId ? ' active' : ''}`;
+
+          const row = document.createElement('div');
+          row.className = 'collection-row';
+
+          const name = document.createElement('strong');
+          name.textContent = group.name || group.id;
+
+          const visibility = document.createElement('span');
+          visibility.className = `badge ${isPrivate(group.id) ? 'private' : 'public'}`;
+          visibility.textContent = isPrivate(group.id) ? 'Private' : 'Public';
+
+          const meta = document.createElement('span');
+          meta.className = 'muted';
+          const items = groupItems(group);
+          const hiddenCount = items.filter((item) => isHidden(item.src)).length;
+          const favCount = items.filter((item) => isFavorite(item.src)).length;
+          meta.textContent = `${items.length} photos / ${favCount} favorites / ${hiddenCount} hidden`;
+
+          row.append(name, visibility);
+          button.append(row, meta);
+          button.addEventListener('click', () => {
+            activeGroupId = group.id;
+            render();
+          });
+          collectionsEl.appendChild(button);
+        });
+      }
+
+      function renderHiddenOrphans() {
+        const manifestPaths = allManifestPhotoSrcs();
+        const orphanPaths = settings.hiddenPhotos.filter((src) => !manifestPaths.has(src));
+        orphanHiddenPanel.hidden = orphanPaths.length === 0;
+        orphanHiddenEl.innerHTML = '';
+
+        orphanPaths.forEach((src) => {
+          const row = document.createElement('div');
+          row.className = 'path-row';
+
+          const label = document.createElement('span');
+          label.textContent = src;
+
+          const restore = document.createElement('button');
+          restore.type = 'button';
+          restore.className = 'toggle danger active';
+          restore.textContent = 'Unhide';
+          restore.addEventListener('click', () => setMembership('hiddenPhotos', src, false));
+
+          row.append(label, restore);
+          orphanHiddenEl.appendChild(row);
+        });
+      }
+
+      function renderPhotos(group) {
+        photosEl.innerHTML = '';
+        if (!group) return;
+
+        groupItems(group).forEach((item) => {
+          const card = document.createElement('article');
+          card.className = 'photo';
+          card.classList.toggle('favorite-photo', isFavorite(item.src));
+          card.classList.toggle('hidden-photo', isHidden(item.src));
+
+          const img = document.createElement('img');
+          img.loading = 'lazy';
+          img.decoding = 'async';
+          img.alt = item.name || item.src;
+          img.src = asset(item.thumb || item.src);
+
+          const body = document.createElement('div');
+          body.className = 'photo-body';
+
+          const name = document.createElement('div');
+          name.className = 'photo-name';
+          name.title = item.src;
+          name.textContent = item.name || item.src;
+
+          const actions = document.createElement('div');
+          actions.className = 'photo-actions';
+
+          const fav = document.createElement('button');
+          fav.type = 'button';
+          fav.className = `toggle${isFavorite(item.src) ? ' active' : ''}`;
+          fav.textContent = isFavorite(item.src) ? 'Favorite' : 'Fav';
+          fav.addEventListener('click', () =>
+            setMembership('favorites', item.src, !isFavorite(item.src))
+          );
+
+          const hidden = document.createElement('button');
+          hidden.type = 'button';
+          hidden.className = `toggle danger${isHidden(item.src) ? ' active' : ''}`;
+          hidden.textContent = isHidden(item.src) ? 'Hidden' : 'Hide';
+          hidden.addEventListener('click', () =>
+            setMembership('hiddenPhotos', item.src, !isHidden(item.src))
+          );
+
+          actions.append(fav, hidden);
+          body.append(name, actions);
+          card.append(img, body);
+          photosEl.appendChild(card);
+        });
+      }
+
+      function render() {
+        const groups = allGroups();
+        const activeGroup = groups.find((group) => group.id === activeGroupId) || groups[0] || null;
+        if (activeGroup) activeGroupId = activeGroup.id;
+
+        renderCollections();
+        renderHiddenOrphans();
+
+        const totalPhotos = groups.reduce((sum, group) => sum + groupItems(group).length, 0);
+        countsEl.textContent = `${groups.length} collections / ${totalPhotos} photos / ${settings.favorites.length} favorites / ${settings.hiddenPhotos.length} hidden`;
+
+        if (!activeGroup) {
+          groupTitleEl.textContent = 'No Collection Selected';
+          groupMetaEl.textContent = '';
+          btnVisibility.disabled = true;
+          directLinkEl.hidden = true;
+          photosEl.innerHTML = '';
+          return;
+        }
+
+        const privateGroup = isPrivate(activeGroup.id);
+        groupTitleEl.textContent = activeGroup.name || activeGroup.id;
+        groupMetaEl.textContent = privateGroup
+          ? 'Private collections are hidden from home navigation but available by direct link.'
+          : 'Public collections are visible on the home page.';
+        btnVisibility.disabled = false;
+        btnVisibility.textContent = privateGroup ? 'Make Public' : 'Make Private';
+        directLinkEl.hidden = false;
+        directLinkEl.href = `../app/group.html?g=${encodeURIComponent(activeGroup.id)}`;
+
+        renderPhotos(activeGroup);
+      }
+
+      btnVisibility.addEventListener('click', () => {
+        if (!activeGroupId) return;
+        setMembership('privateGroups', activeGroupId, !isPrivate(activeGroupId));
+      });
+      btnSave.addEventListener('click', saveSettings);
+      document.getElementById('btnLoadFetch').addEventListener('click', () => {
+        loadFromFetch().catch((err) => {
+          console.error(err);
+          loadStatusEl.textContent = `Load failed: ${err.message}`;
+        });
+      });
+      document.getElementById('btnOpenRepo').addEventListener('click', () => {
+        openRepoFolder().catch((err) => {
+          console.error(err);
+          loadStatusEl.textContent = `Repo load failed: ${err.message}`;
+        });
+      });
+
+      loadFromFetch().catch(() => {
+        loadStatusEl.textContent = 'Open the repo folder to load and save settings.';
+      });
+    </script>
+  </body>
+</html>

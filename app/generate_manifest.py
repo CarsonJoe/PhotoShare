@@ -17,9 +17,26 @@ PHOTOS_DIR = REPO_ROOT / "photos"
 THUMBS_DIR = PHOTOS_DIR / "_thumbs"
 MANIFEST_PATH = SCRIPT_DIR / "photos.json"
 INLINE_PATH = SCRIPT_DIR / "photos-inline.js"
+SETTINGS_PATH = SCRIPT_DIR / "photo-settings.json"
 
 ALLOWED_EXTS = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
 MAX_THUMB_WIDTH = 600
+
+
+def load_settings():
+    defaults = {"favorites": [], "hiddenPhotos": [], "privateGroups": []}
+    if not SETTINGS_PATH.exists():
+        return defaults
+    try:
+        data = json.loads(SETTINGS_PATH.read_text(encoding="utf-8"))
+    except Exception as e:
+        print(f"Warning: failed to read {SETTINGS_PATH}: {e}", file=sys.stderr)
+        return defaults
+    return {
+        "favorites": [str(v) for v in data.get("favorites", []) if v],
+        "hiddenPhotos": [str(v) for v in data.get("hiddenPhotos", []) if v],
+        "privateGroups": [str(v) for v in data.get("privateGroups", []) if v],
+    }
 
 
 def ensure_thumbnail(src: Path, dst: Path):
@@ -48,6 +65,9 @@ PHOTOS_DIR.mkdir(parents=True, exist_ok=True)
 THUMBS_DIR.mkdir(parents=True, exist_ok=True)
 
 groups = []
+settings = load_settings()
+hidden_photos = set(settings["hiddenPhotos"])
+private_groups = set(settings["privateGroups"])
 for group_dir in sorted(PHOTOS_DIR.iterdir()):
     if not group_dir.is_dir() or group_dir.name == "_thumbs":
         continue
@@ -60,6 +80,8 @@ for group_dir in sorted(PHOTOS_DIR.iterdir()):
     items, rel_photos, rel_thumbs = [], [], []
     for f in files:
         rel = f"photos/{group_dir.name}/{f.name}"
+        if rel in hidden_photos:
+            continue
         rel_photos.append(rel)
 
         thumb_path = THUMBS_DIR / group_dir.name / (f.stem + ".jpg")
@@ -78,6 +100,7 @@ for group_dir in sorted(PHOTOS_DIR.iterdir()):
     groups.append({
         "id": group_dir.name,
         "name": group_dir.name.replace("_", " "),
+        "visibility": "private" if group_dir.name in private_groups else "public",
         "cover": rel_photos[0] if rel_photos else None,
         "coverThumb": rel_thumbs[0] if rel_thumbs else None,
         "photos": rel_photos,
@@ -88,6 +111,8 @@ for group_dir in sorted(PHOTOS_DIR.iterdir()):
 manifest = {
     "generatedAt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
     "thumbWidth": MAX_THUMB_WIDTH,
+    "favorites": [src for src in settings["favorites"] if src not in hidden_photos],
+    "hiddenPhotos": settings["hiddenPhotos"],
     "groups": groups,
     "locations": [],
 }

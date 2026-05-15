@@ -100,12 +100,26 @@ $repoRoot = Resolve-Path (Join-Path $scriptDir '..')
 $photosDir = Join-Path $repoRoot 'photos'
 $thumbsDir = Join-Path $photosDir '_thumbs'
 $manifestPath = Join-Path $scriptDir 'photos.json'
+$settingsPath = Join-Path $scriptDir 'photo-settings.json'
 
 Ensure-Dir $photosDir
 Ensure-Dir $thumbsDir
 
 $allowed = @('.jpg','.jpeg','.png','.gif','.webp','.JPG','.JPEG','.PNG','.GIF','.WEBP')
 $maxThumbWidth = 600
+
+$settings = [PSCustomObject]@{ favorites = @(); hiddenPhotos = @(); privateGroups = @() }
+if (Test-Path -LiteralPath $settingsPath) {
+  try {
+    $settings = Get-Content -LiteralPath $settingsPath -Raw | ConvertFrom-Json
+  } catch {
+    Write-Warning ("Failed to read {0}: {1}" -f $settingsPath, $_.Exception.Message)
+  }
+}
+$hiddenPhotos = @{}
+@($settings.hiddenPhotos) | ForEach-Object { if ($_){ $hiddenPhotos[[string]$_] = $true } }
+$privateGroups = @{}
+@($settings.privateGroups) | ForEach-Object { if ($_){ $privateGroups[[string]$_] = $true } }
 
 $groups = @()
 Get-ChildItem -Path $photosDir -Directory | Where-Object { $_.Name -ne '_thumbs' } | ForEach-Object {
@@ -116,7 +130,9 @@ Get-ChildItem -Path $photosDir -Directory | Where-Object { $_.Name -ne '_thumbs'
   $items = @()
   foreach($f in $files){
     $rel = Join-Path 'photos' (Join-Path $group.Name $f.Name)
-    $relPhotos += (ToWebPath $rel)
+    $relWeb = ToWebPath $rel
+    if ($hiddenPhotos.ContainsKey($relWeb)) { continue }
+    $relPhotos += $relWeb
 
     $thumbPath = Get-ThumbPath -thumbsRoot $thumbsDir -srcFile $f -groupName $group.Name
     $meta = Ensure-Thumbnail -srcPath $f.FullName -dstPath $thumbPath -maxWidth $maxThumbWidth
@@ -124,7 +140,7 @@ Get-ChildItem -Path $photosDir -Directory | Where-Object { $_.Name -ne '_thumbs'
     $relThumbs += $thumbRel
 
     $items += [PSCustomObject]@{
-      src = (ToWebPath $rel)
+      src = $relWeb
       thumb = $thumbRel
       name = [System.IO.Path]::GetFileNameWithoutExtension($f.Name)
       width = if ($meta) { $meta.width } else { $null }
@@ -137,6 +153,7 @@ Get-ChildItem -Path $photosDir -Directory | Where-Object { $_.Name -ne '_thumbs'
   $groups += [PSCustomObject]@{
     id = $group.Name
     name = ($group.Name -replace '_',' ')
+    visibility = if ($privateGroups.ContainsKey($group.Name)) { 'private' } else { 'public' }
     cover = $cover
     coverThumb = $coverThumb
     photos = $relPhotos
@@ -148,6 +165,8 @@ Get-ChildItem -Path $photosDir -Directory | Where-Object { $_.Name -ne '_thumbs'
 $manifest = [PSCustomObject]@{
   generatedAt = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
   thumbWidth = $maxThumbWidth
+  favorites = @($settings.favorites) | Where-Object { $_ -and -not $hiddenPhotos.ContainsKey([string]$_) }
+  hiddenPhotos = @($settings.hiddenPhotos)
   groups = $groups
   locations = @()
 }

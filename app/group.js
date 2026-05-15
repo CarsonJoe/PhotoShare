@@ -51,7 +51,17 @@
     try {
       const data = await PhotoShare.loadManifest();
       const id = (getParam('g') || '').trim();
-      let group = Array.isArray(data.groups) ? data.groups.find((entry) => entry.id === id) : null;
+      const isFavoritesGroup = id === 'favorites';
+      let group = null;
+      if (isFavoritesGroup) {
+        group = {
+          id: 'favorites',
+          name: 'Favorites',
+          items: PhotoShare.getFavoriteItems(data.groups),
+        };
+      } else if (Array.isArray(data.groups)) {
+        group = data.groups.find((entry) => entry.id === id);
+      }
       if (!group && Array.isArray(data.groups)) {
         group = data.groups.find((entry) => entry.name === id);
       }
@@ -59,11 +69,11 @@
       if (!group || !group.items.length) {
         photosEl.innerHTML = '';
         emptyEl.hidden = false;
-        titleEl.textContent = 'Album unavailable';
-        headerTitleEl.textContent = 'Album unavailable';
+        titleEl.textContent = isFavoritesGroup ? 'Favorites' : 'Album unavailable';
+        headerTitleEl.textContent = isFavoritesGroup ? 'No favorites yet' : 'Album unavailable';
         btnSelectHeader.hidden = true;
         genEl.textContent = '';
-        galleryMetaEl.textContent = '';
+        galleryMetaEl.textContent = isFavoritesGroup ? 'Manage favorites in tools/manager.html.' : '';
         PhotoShare.setBusyState(false, 'Album ready');
         return;
       }
@@ -455,7 +465,7 @@
         img.loading = index < 4 ? 'eager' : 'lazy';
         img.decoding = 'async';
         img.fetchPriority = index < 3 ? 'high' : 'auto';
-        img.alt = `${group.name} photo ${index + 1}`;
+        img.alt = `${item.sourceGroupName || group.name} photo ${index + 1}`;
         img.src = PhotoShare.relativeAsset(item.thumb || item.src);
         PhotoShare.attachImageLoadState(card, img);
 

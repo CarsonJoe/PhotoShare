@@ -1,6 +1,7 @@
 (function () {
   const ManifestPath = './photos.json';
   const SkeletonHeights = [260, 340, 300, 380, 280, 360, 320, 410];
+  let manifestFavorites = [];
 
   function basename(path) {
     return String(path || '').split('/').filter(Boolean).pop() || '';
@@ -66,6 +67,7 @@
       const data = window.__PHOTOSHARE_MANIFEST__;
       data.groups = Array.isArray(data.groups) ? data.groups.map(normalizeGroup) : [];
       data.groups.sort((a, b) => a.name.localeCompare(b.name));
+      manifestFavorites = Array.isArray(data.favorites) ? data.favorites.map(String) : [];
       return data;
     }
     const url = `${ManifestPath}?v=${Date.now()}`;
@@ -78,6 +80,7 @@
       const data = JSON.parse(text);
       data.groups = Array.isArray(data.groups) ? data.groups.map(normalizeGroup) : [];
       data.groups.sort((a, b) => a.name.localeCompare(b.name));
+      manifestFavorites = Array.isArray(data.favorites) ? data.favorites.map(String) : [];
       return data;
     } catch (err) {
       console.error(err);
@@ -121,6 +124,36 @@
   function relativeAsset(path) {
     if (!path) return 'placeholder.svg';
     return `../${String(path).replace(/^\.?\//, '')}`;
+  }
+
+  function itemKey(item) {
+    return item && item.src ? String(item.src) : '';
+  }
+
+  function readFavoriteKeys() {
+    return new Set(manifestFavorites);
+  }
+
+  function isFavorite(item) {
+    const key = itemKey(item);
+    return !!key && readFavoriteKeys().has(key);
+  }
+
+  function getFavoriteItems(groups) {
+    const keys = readFavoriteKeys();
+    if (!keys.size || !Array.isArray(groups)) return [];
+    const bySrc = new Map();
+    groups.forEach((group) => {
+      (group.items || []).forEach((item) => {
+        if (!item || !item.src || bySrc.has(item.src)) return;
+        bySrc.set(item.src, {
+          ...item,
+          sourceGroupId: group.id,
+          sourceGroupName: group.name,
+        });
+      });
+    });
+    return Array.from(keys).map((key) => bySrc.get(key)).filter(Boolean);
   }
 
   function revealElements(root = document) {
@@ -256,6 +289,9 @@
     attachImageLoadState,
     basename,
     formatTimestamp,
+    getFavoriteItems,
+    isFavorite,
+    itemKey,
     loadManifest,
     prettifyLabel,
     relativeAsset,
