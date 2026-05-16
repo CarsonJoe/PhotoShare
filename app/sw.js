@@ -1,5 +1,5 @@
-const SHELL_CACHE = 'photoshare-shell-v5';
-const RUNTIME_CACHE = 'photoshare-runtime-v5';
+const SHELL_CACHE = 'photoshare-shell-v6';
+const RUNTIME_CACHE = 'photoshare-runtime-v6';
 const SHELL_ASSETS = [
   './',
   './index.html',

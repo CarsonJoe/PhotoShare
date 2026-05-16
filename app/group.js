@@ -69,11 +69,11 @@
       if (!group || !group.items.length) {
         photosEl.innerHTML = '';
         emptyEl.hidden = false;
-        titleEl.textContent = isFavoritesGroup ? 'Favorites' : 'Album unavailable';
+        if (titleEl) titleEl.textContent = isFavoritesGroup ? 'Favorites' : 'Album unavailable';
         headerTitleEl.textContent = isFavoritesGroup ? 'No favorites yet' : 'Album unavailable';
         btnSelectHeader.hidden = true;
         genEl.textContent = '';
-        galleryMetaEl.textContent = isFavoritesGroup ? 'Manage favorites in tools/manager.html.' : '';
+        if (galleryMetaEl) galleryMetaEl.textContent = isFavoritesGroup ? 'Manage favorites in tools/manager.html.' : '';
         PhotoShare.setBusyState(false, 'Album ready');
         return;
       }
@@ -121,7 +121,7 @@
       ];
 
       document.title = `${group.name} | Carson's Photos`;
-      titleEl.textContent = group.name;
+      if (titleEl) titleEl.textContent = group.name;
       headerTitleEl.textContent = `${group.name} / ${items.length} frames`;
       if (lbAlbumName) lbAlbumName.textContent = group.name;
 
@@ -129,7 +129,7 @@
         ? PhotoShare.formatTimestamp(data.generatedAt, { includeTime: true })
         : '';
 
-      galleryMetaEl.textContent = group.collectionDate || '';
+      if (galleryMetaEl) galleryMetaEl.textContent = group.collectionDate || '';
       genEl.textContent = formattedDateWithTime ? `Updated ${formattedDateWithTime}` : '';
 
       const SharePresets = {
@@ -438,8 +438,7 @@
         const width = photosEl.clientWidth || window.innerWidth || 1200;
         if (width < 560) return 2;
         if (width < 920) return 3;
-        if (width < 1260) return 4;
-        return 5;
+        return 4;
       }
 
       function getPhotoAspect(item) {
@@ -1272,10 +1271,10 @@
       console.error('Error rendering group page:', err);
       photosEl.innerHTML = '';
       emptyEl.hidden = false;
-      titleEl.textContent = 'Album unavailable';
+      if (titleEl) titleEl.textContent = 'Album unavailable';
       headerTitleEl.textContent = 'Album unavailable';
       btnSelectHeader.hidden = true;
-      galleryMetaEl.textContent = '';
+      if (galleryMetaEl) galleryMetaEl.textContent = '';
       PhotoShare.setBusyState(false, 'Album ready');
     }
   });
