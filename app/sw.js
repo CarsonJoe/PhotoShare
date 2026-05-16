@@ -9,6 +9,8 @@ const SHELL_ASSETS = [
   './styles.css',
   './manifest.webmanifest',
   './app-icon.svg',
+  './app-icon-192.png',
+  './app-icon-512.png',
   './photos.json',
 ];
 
