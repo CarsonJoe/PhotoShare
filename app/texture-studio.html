@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#10100f" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <title>Texture Studio</title>
+    <link rel="icon" href="app-icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="app-icon-192.png" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="stylesheet" href="styles.css" />
+    <script>(function(){var t=localStorage.getItem('ps-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');})();</script>
+  </head>
+  <body class="page-texture" aria-busy="false">
+    <header class="site-header texture-header" data-reveal>
+      <div class="header-left">
+        <a class="back-link" href="index.html" aria-label="Back to photos">Back</a>
+      </div>
+      <div class="header-center">Texture Studio</div>
+      <nav class="header-right site-nav" aria-label="Studio actions">
+        <button id="randomizeBtn" class="texture-icon-btn" type="button" aria-label="Randomize texture">↻</button>
+        <button id="pauseBtn" class="texture-icon-btn" type="button" aria-label="Pause animation">Ⅱ</button>
+        <button id="exportBtn" class="texture-action-btn" type="button">PNG</button>
+      </nav>
+    </header>
+
+    <main class="texture-workbench">
+      <section class="texture-stage" aria-label="Texture preview">
+        <canvas id="textureCanvas" class="texture-canvas"></canvas>
+        <div class="texture-readout" aria-live="polite">
+          <span id="presetReadout">Flow Marble</span>
+          <span id="sizeReadout">0 x 0</span>
+        </div>
+      </section>
+
+      <aside class="texture-controls" aria-label="Texture controls">
+        <div class="texture-brand">
+          <p class="eyebrow">Asset Lab</p>
+          <h1>Texture Studio</h1>
+        </div>
+
+        <div class="preset-grid" id="shaderGrid" aria-label="Shaders"></div>
+        <div id="paramsPanel" class="params-panel" aria-label="Shader parameters"></div>
+        <div class="gradient-editor" aria-label="Gradient editor">
+          <div class="control-row">
+            <span>Gradient</span>
+            <button id="removeStopBtn" class="texture-action-btn" type="button">Remove</button>
+          </div>
+          <div id="gradientTrack" class="gradient-track" role="button" tabindex="0" aria-label="Click to add a color stop"></div>
+          <div id="gradientStops" class="gradient-stops"></div>
+          <label class="color-field" for="stopColorInput">
+            <span>Stop Color</span>
+            <input id="stopColorInput" type="color" value="#c6d2bf" />
+          </label>
+        </div>
+
+        <div class="asset-tray">
+          <div class="control-row">
+            <span>Library</span>
+            <button id="captureBtn" class="texture-action-btn" type="button">Capture</button>
+          </div>
+          <div id="assetGrid" class="asset-grid" aria-live="polite"></div>
+        </div>
+      </aside>
+    </main>
+
+    <script type="module" src="./texture-studio.js"></script>
+  </body>
+</html>

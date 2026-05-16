@@ -11,6 +11,7 @@
     <link rel="apple-touch-icon" href="app-icon-192.png" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="stylesheet" href="styles.css" />
+    <script>(function(){var t=localStorage.getItem('ps-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');})();</script>
   </head>
   <body class="page-home" aria-busy="true">
 
@@ -22,6 +23,9 @@
       <nav class="header-right site-nav" aria-label="Home sections">
         <a href="#favorites">Favorites</a>
         <a href="#collections">Collections</a>
+        <a href="texture-studio.html">Textures</a>
+        <button id="themeToggleBtn" class="header-icon-btn" title="Toggle theme" aria-label="Switch to dark mode">◐</button>
+        <button id="fullscreenBtn" class="header-icon-btn" title="Toggle fullscreen" aria-label="Enter fullscreen">⛶</button>
       </nav>
     </header>
 
@@ -53,6 +57,49 @@
 
     <script src="./photos-inline.js"></script>
     <script src="./main.js"></script>
+    <script>
+      (function () {
+        const htmlEl = document.documentElement;
+        const themeBtn = document.getElementById('themeToggleBtn');
+        const fsBtn = document.getElementById('fullscreenBtn');
+        const themeMeta = document.querySelector('meta[name="theme-color"]');
+
+        function applyTheme(theme) {
+          htmlEl.classList.add('theme-transition');
+          htmlEl.setAttribute('data-theme', theme);
+          localStorage.setItem('ps-theme', theme);
+          if (themeMeta) themeMeta.content = theme === 'dark' ? '#0f0e0d' : '#ffffff';
+          themeBtn.textContent = theme === 'dark' ? '◑' : '◐';
+          themeBtn.setAttribute('aria-label', theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+          window.setTimeout(() => htmlEl.classList.remove('theme-transition'), 380);
+        }
+
+        themeBtn.addEventListener('click', () => {
+          applyTheme(htmlEl.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+        });
+
+        const savedTheme = localStorage.getItem('ps-theme') || 'light';
+        applyTheme(savedTheme);
+
+        function syncFsBtn() {
+          const isFs = Boolean(document.fullscreenElement);
+          fsBtn.textContent = isFs ? '⊡' : '⛶';
+          fsBtn.setAttribute('aria-label', isFs ? 'Exit fullscreen' : 'Enter fullscreen');
+          fsBtn.title = isFs ? 'Exit fullscreen' : 'Enter fullscreen';
+        }
+
+        fsBtn.addEventListener('click', () => {
+          if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(() => {});
+          } else {
+            document.exitFullscreen().catch(() => {});
+          }
+        });
+
+        document.addEventListener('fullscreenchange', syncFsBtn);
+        syncFsBtn();
+      })();
+    </script>
     <script>
       window.addEventListener('DOMContentLoaded', async () => {
         const { PhotoShare } = window;
