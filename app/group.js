@@ -101,6 +101,9 @@
       let lastTapTime = 0;
       let lastTapX = 0;
       let lastTapY = 0;
+      let zoomInteractionTimer = null;
+      let gestureStartZoom = 1;
+      let chromeHiddenByZoom = false;
 
       let selectionMode = false;
       let lastSelectedIndex = null;
@@ -583,15 +586,49 @@
       }
 
       function applyZoom(zoom, panX, panY) {
+        const wasZoomed = lbZoom > 1;
         lbZoom = zoom;
         lbPanX = panX;
         lbPanY = panY;
         lb.style.setProperty('--lb-zoom', String(zoom));
         lb.style.setProperty('--lb-pan-x', `${panX}px`);
         lb.style.setProperty('--lb-pan-y', `${panY}px`);
+
+        if (zoom > 1 && lightboxChromeVisible) {
+          chromeHiddenByZoom = true;
+          setChromeVisible(false);
+        } else if (zoom <= 1 && wasZoomed && chromeHiddenByZoom) {
+          setChromeVisible(true);
+        }
+      }
+
+      function setZoomInteractionActive() {
+        lb.classList.add('is-pinching');
+        if (zoomInteractionTimer) window.clearTimeout(zoomInteractionTimer);
+        zoomInteractionTimer = window.setTimeout(() => {
+          lb.classList.remove('is-pinching');
+          zoomInteractionTimer = null;
+        }, 140);
+      }
+
+      function zoomAroundPoint(nextZoom, clientX = window.innerWidth / 2, clientY = window.innerHeight / 2) {
+        const clampedZoom = Math.max(1, Math.min(5, nextZoom));
+        const previousZoom = lbZoom || 1;
+        const cx = window.innerWidth / 2;
+        const cy = window.innerHeight / 2;
+        const anchorX = (clientX - cx - lbPanX) / previousZoom;
+        const anchorY = (clientY - cy - lbPanY) / previousZoom;
+        const rawPanX = clientX - cx - anchorX * clampedZoom;
+        const rawPanY = clientY - cy - anchorY * clampedZoom;
+        const clamped = clampPan(rawPanX, rawPanY, clampedZoom);
+        applyZoom(clampedZoom, clamped.x, clamped.y);
       }
 
       function resetZoom() {
+        if (zoomInteractionTimer) {
+          window.clearTimeout(zoomInteractionTimer);
+          zoomInteractionTimer = null;
+        }
         lbZoom = 1;
         lbPanX = 0;
         lbPanY = 0;
@@ -601,6 +638,7 @@
         lb.classList.remove('is-pinching');
         pinchPointers.clear();
         pinchState = null;
+        if (chromeHiddenByZoom) setChromeVisible(true);
       }
 
       function ensureFullImage(index) {
@@ -714,6 +752,7 @@
       function setChromeVisible(visible) {
         lightboxChromeVisible = visible;
         lb.classList.toggle('is-chrome-hidden', !visible);
+        if (visible) chromeHiddenByZoom = false;
       }
 
       function finishGestureState() {
@@ -770,21 +809,11 @@
           finished = true;
           lbTrack.removeEventListener('transitionend', finalize);
           clearTrackAnimationTimer();
-          setTrackAnimated(false);
 
           if (nextIndex !== null) {
-            // Pre-copy the currently-visible slide's image into lbImg before
-            // renderTrack resets the track to center. Without this, there is a
-            // single-frame window where the track has snapped back but lbImg
-            // still shows the previous photo, causing a brief flash.
-            const landingSlide = targetBase === '-200%' ? lbNextImg : lbPrevImg;
-            if (landingSlide && landingSlide.src) {
-              lbImg.dataset.loadToken = String(++loadToken);
-              lbImg.classList.toggle('is-thumb', landingSlide.classList.contains('is-thumb'));
-              lbImg.src = landingSlide.src;
-            }
-            renderTrack(nextIndex);
+            commitTrackLanding(targetBase, nextIndex);
           } else {
+            setTrackAnimated(false);
             resetTrackPosition();
           }
         };
@@ -801,6 +830,43 @@
       function show(index) {
         renderTrack(index);
         applyLightboxTransform(0, 0, 1, 0.96);
+      }
+
+      function commitTrackLanding(targetBase, nextIndex) {
+        lightboxIndex = normalizeIndex(nextIndex);
+        updateLightboxChrome();
+        resetZoom();
+
+        const landingSlide = targetBase === '-200%' ? lbNextImg : lbPrevImg;
+        if (landingSlide && landingSlide.src) {
+          lbImg.dataset.loadToken = String(++loadToken);
+          lbImg.classList.toggle('is-thumb', landingSlide.classList.contains('is-thumb'));
+          lbImg.alt = `${group.name} photo ${lightboxIndex + 1}`;
+          lbImg.src = landingSlide.currentSrc || landingSlide.src;
+        } else {
+          syncSlideImage(lbImg, lightboxIndex, {
+            alt: `${group.name} photo ${lightboxIndex + 1}`,
+            showProgress: true,
+          });
+        }
+
+        setTrackAnimated(false);
+        // Force the center image mutation to apply before snapping the track
+        // back to center. Without this, mobile browsers can briefly expose the
+        // old center slide during the no-transition transform reset.
+        void lbImg.offsetWidth;
+        resetTrackPosition();
+
+        requestAnimationFrame(() => {
+          syncSlideImage(lbImg, lightboxIndex, {
+            alt: `${group.name} photo ${lightboxIndex + 1}`,
+            showProgress: true,
+          });
+          syncSlideImage(lbPrevImg, lightboxIndex - 1, { alt: '' });
+          syncSlideImage(lbNextImg, lightboxIndex + 1, { alt: '' });
+          preloadNeighbor(lightboxIndex - 2);
+          preloadNeighbor(lightboxIndex + 2);
+        });
       }
 
       function openLightbox(index) {
@@ -883,20 +949,18 @@
           const curMidY = (pts[0].y + pts[1].y) / 2;
 
           const rawZoom = pinchState.startZoom * (curDist / pinchState.startDist);
-          const newZoom = Math.max(1, Math.min(5, rawZoom));
-
-          // Keep the start-midpoint anchor fixed under the fingers.
-          // With transform: translate(panX,panY) scale(zoom) and origin:center,
-          // a point at image-relative coords (ix,iy) appears at
-          // (cx + ix*zoom + panX, cy + iy*zoom + panY).
-          const cx = window.innerWidth / 2;
-          const cy = window.innerHeight / 2;
-          const anchorX = (pinchState.startMidX - cx - pinchState.startPanX) / pinchState.startZoom;
-          const anchorY = (pinchState.startMidY - cy - pinchState.startPanY) / pinchState.startZoom;
-          const rawPanX = curMidX - cx - anchorX * newZoom;
-          const rawPanY = curMidY - cy - anchorY * newZoom;
-          const clamped = clampPan(rawPanX, rawPanY, newZoom);
-          applyZoom(newZoom, clamped.x, clamped.y);
+          const previousZoom = lbZoom;
+          lbZoom = pinchState.startZoom;
+          lbPanX = pinchState.startPanX;
+          lbPanY = pinchState.startPanY;
+          zoomAroundPoint(rawZoom, pinchState.startMidX, pinchState.startMidY);
+          const movedPan = clampPan(
+            lbPanX + curMidX - pinchState.startMidX,
+            lbPanY + curMidY - pinchState.startMidY,
+            lbZoom
+          );
+          applyZoom(lbZoom, movedPan.x, movedPan.y);
+          if (previousZoom !== lbZoom) setZoomInteractionActive();
           return;
         }
 
@@ -1025,6 +1089,7 @@
             const rawPanY = (event.clientY - cy) * (1 - newZoom);
             const clamped = clampPan(rawPanX, rawPanY, newZoom);
             applyZoom(newZoom, clamped.x, clamped.y);
+            setZoomInteractionActive();
             lastTapTime = 0;
             clearGesture();
             return;
@@ -1052,6 +1117,58 @@
         }
 
         clearGesture();
+      }
+
+      function handleLightboxWheel(event) {
+        if (lb.hidden) return;
+        if (event.target.closest('.lb-btn, .lb-action-btn, .lb-thumb, .lb-filmstrip')) return;
+
+        event.preventDefault();
+        event.stopPropagation();
+        if (lightboxAnimating) return;
+
+        const deltaScale = event.deltaMode === WheelEvent.DOM_DELTA_LINE ? 16 : 1;
+        const deltaX = event.deltaX * deltaScale;
+        const deltaY = event.deltaY * deltaScale;
+
+        if (event.ctrlKey || event.metaKey) {
+          const delta = deltaY || deltaX;
+          if (!delta) return;
+          const nextZoom = lbZoom * Math.exp(-delta * 0.012);
+          zoomAroundPoint(nextZoom, event.clientX, event.clientY);
+          setZoomInteractionActive();
+          return;
+        }
+
+        if (lbZoom <= 1) return;
+
+        const panX = event.shiftKey && !deltaX ? deltaY : deltaX;
+        const panY = event.shiftKey && !deltaX ? 0 : deltaY;
+        const clamped = clampPan(lbPanX - panX, lbPanY - panY, lbZoom);
+        applyZoom(lbZoom, clamped.x, clamped.y);
+        setZoomInteractionActive();
+      }
+
+      function handleGestureStart(event) {
+        if (lb.hidden) return;
+        event.preventDefault();
+        gestureStartZoom = lbZoom;
+        lb.classList.add('is-pinching');
+      }
+
+      function handleGestureChange(event) {
+        if (lb.hidden) return;
+        event.preventDefault();
+        const clientX = Number.isFinite(event.clientX) ? event.clientX : window.innerWidth / 2;
+        const clientY = Number.isFinite(event.clientY) ? event.clientY : window.innerHeight / 2;
+        zoomAroundPoint(gestureStartZoom * event.scale, clientX, clientY);
+      }
+
+      function handleGestureEnd(event) {
+        if (lb.hidden) return;
+        event.preventDefault();
+        if (lbZoom <= 1) resetZoom();
+        else setZoomInteractionActive();
       }
 
       async function shareCurrentPhoto() {
@@ -1098,9 +1215,13 @@
       btnNext.addEventListener('click', () => stepLightbox(1));
       btnClose.addEventListener('click', closeLightbox);
       lbStage.addEventListener('pointerdown', handleStagePointerDown);
-      lbStage.addEventListener('pointermove', handleStagePointerMove);
+      lbStage.addEventListener('pointermove', handleStagePointerMove, { passive: false });
       lbStage.addEventListener('pointerup', handleStagePointerEnd);
       lbStage.addEventListener('pointercancel', handleStagePointerEnd);
+      lbStage.addEventListener('wheel', handleLightboxWheel, { passive: false });
+      lbStage.addEventListener('gesturestart', handleGestureStart, { passive: false });
+      lbStage.addEventListener('gesturechange', handleGestureChange, { passive: false });
+      lbStage.addEventListener('gestureend', handleGestureEnd, { passive: false });
 
       lbSelectBtn.addEventListener('click', () => {
         if (!selectionMode) enterSelect();

@@ -875,6 +875,7 @@ body.is-ready .page-status {
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
 }
 
 .lb-image {
@@ -884,7 +885,7 @@ body.is-ready .page-status {
   object-fit: contain;
   object-position: center;
   box-shadow: 0 40px 100px rgba(11, 8, 6, 0.28);
-  transform: translate(var(--lb-pan-x, 0px), var(--lb-pan-y, 0px)) scale(var(--lb-zoom, 1));
+  transform: none;
   transform-origin: center;
   touch-action: none;
   transition:
@@ -893,8 +894,12 @@ body.is-ready .page-status {
     transform 0.26s var(--ease);
 }
 
+#lightboxImage {
+  transform: translate(var(--lb-pan-x, 0px), var(--lb-pan-y, 0px)) scale(var(--lb-zoom, 1));
+}
+
 /* Suppress transform transition during active pinch/pan so it tracks fingers */
-.lightbox.is-pinching .lb-image {
+.lightbox.is-pinching #lightboxImage {
   transition:
     filter 0.2s ease,
     box-shadow 0.38s ease;
