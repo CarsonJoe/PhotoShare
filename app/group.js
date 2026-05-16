@@ -114,6 +114,11 @@
       let lightboxAnimating = false;
       let lightboxChromeVisible = true;
       let trackAnimationTimer = null;
+      const slideSlots = [
+        { slide: lbPrevImg.closest('.lb-slide'), img: lbPrevImg },
+        { slide: lbImg.closest('.lb-slide'), img: lbImg },
+        { slide: lbNextImg.closest('.lb-slide'), img: lbNextImg },
+      ];
 
       document.title = `${group.name} | Carson's Photos`;
       titleEl.textContent = group.name;
@@ -551,7 +556,7 @@
         if (!animated) clearTrackAnimationTimer();
       }
 
-      function setTrackPosition(base, offset = 0) {
+      function setTrackPosition(base = '-100%', offset = 0) {
         lb.style.setProperty('--lb-track-base', base);
         lb.style.setProperty('--lb-track-offset', `${offset}px`);
       }
@@ -559,6 +564,20 @@
       function resetTrackPosition() {
         setTrackAnimated(false);
         setTrackPosition('-100%', 0);
+      }
+
+      function orderedSlots() {
+        const slides = Array.from(lbTrack.children);
+        return slides
+          .map((slide) => slideSlots.find((slot) => slot.slide === slide))
+          .filter(Boolean);
+      }
+
+      function updateActiveSlide() {
+        const centerSlot = orderedSlots()[1];
+        slideSlots.forEach((slot) => {
+          slot.img.classList.toggle('is-active', slot === centerSlot);
+        });
       }
 
       function resetLightboxTransform() {
@@ -772,30 +791,23 @@
         updateLightboxChrome();
         resetZoom();
 
-        // Update the center slide first, then snap the track back to center,
-        // then update the neighbor slides. This order ensures neighbors are
-        // only mutated once they're off-screen, eliminating the flash where
-        // lbNextImg/lbPrevImg briefly show wrong content while still visible.
-        syncSlideImage(lbImg, lightboxIndex, {
+        slideSlots.forEach((slot) => lbTrack.appendChild(slot.slide));
+        updateActiveSlide();
+        resetTrackPosition();
+
+        syncSlideImage(slideSlots[1].img, lightboxIndex, {
           alt: `${group.name} photo ${lightboxIndex + 1}`,
           showProgress: true,
         });
-        resetTrackPosition();
 
-        syncSlideImage(lbPrevImg, lightboxIndex - 1, { alt: '' });
-        syncSlideImage(lbNextImg, lightboxIndex + 1, { alt: '' });
+        syncSlideImage(slideSlots[0].img, lightboxIndex - 1, { alt: '' });
+        syncSlideImage(slideSlots[2].img, lightboxIndex + 1, { alt: '' });
 
         preloadNeighbor(lightboxIndex - 2);
         preloadNeighbor(lightboxIndex + 2);
       }
 
       function animateTrackTo(targetBase, nextIndex = null) {
-        if (!lbTrack) {
-          if (nextIndex !== null) renderTrack(nextIndex);
-          else clearGesture();
-          return;
-        }
-
         finishGestureState();
         lb.classList.remove('is-dragging');
         applyLightboxTransform(0, 0, 1, 0.96);
@@ -833,57 +845,34 @@
       }
 
       function commitTrackLanding(targetBase, nextIndex) {
+        const direction = targetBase === '-200%' ? 1 : -1;
+        const slots = orderedSlots();
+        const oldCenterSlot = slots[1];
+        const landedSlot = direction > 0 ? slots[2] : slots[0];
+        const recycledSlot = direction > 0 ? slots[0] : slots[2];
+
+        if (!landedSlot || !oldCenterSlot || !recycledSlot) {
+          renderTrack(nextIndex);
+          return;
+        }
+
         lightboxIndex = normalizeIndex(nextIndex);
-        updateLightboxChrome();
         resetZoom();
-
-        const landingSlide = targetBase === '-200%' ? lbNextImg : lbPrevImg;
-        const proxy = landingSlide && landingSlide.src ? landingSlide.cloneNode(false) : null;
-        const mediaShell = lbTrack ? lbTrack.closest('.lb-media-shell') : null;
-
-        if (proxy && mediaShell) {
-          proxy.removeAttribute('id');
-          proxy.className = `lb-reset-proxy${landingSlide.classList.contains('is-thumb') ? ' is-thumb' : ''}`;
-          proxy.alt = '';
-          proxy.src = landingSlide.currentSrc || landingSlide.src;
-          mediaShell.appendChild(proxy);
-          lb.classList.add('is-track-resetting');
-        }
-
-        if (landingSlide && landingSlide.src) {
-          lbImg.dataset.loadToken = String(++loadToken);
-          lbImg.classList.toggle('is-thumb', landingSlide.classList.contains('is-thumb'));
-          lbImg.alt = `${group.name} photo ${lightboxIndex + 1}`;
-          lbImg.src = landingSlide.currentSrc || landingSlide.src;
-        } else {
-          syncSlideImage(lbImg, lightboxIndex, {
-            alt: `${group.name} photo ${lightboxIndex + 1}`,
-            showProgress: true,
-          });
-        }
-
         setTrackAnimated(false);
-        // Force the center image mutation to apply before snapping the track
-        // back to center. Without this, mobile browsers can briefly expose the
-        // old center slide during the no-transition transform reset.
-        void lbImg.offsetWidth;
-        resetTrackPosition();
+        if (direction > 0) {
+          lbTrack.appendChild(recycledSlot.slide);
+        } else {
+          lbTrack.prepend(recycledSlot.slide);
+        }
+        setTrackPosition('-100%', 0);
+        updateActiveSlide();
 
-        requestAnimationFrame(() => {
-          syncSlideImage(lbImg, lightboxIndex, {
-            alt: `${group.name} photo ${lightboxIndex + 1}`,
-            showProgress: true,
-          });
-          syncSlideImage(lbPrevImg, lightboxIndex - 1, { alt: '' });
-          syncSlideImage(lbNextImg, lightboxIndex + 1, { alt: '' });
-          preloadNeighbor(lightboxIndex - 2);
-          preloadNeighbor(lightboxIndex + 2);
-
-          requestAnimationFrame(() => {
-            lb.classList.remove('is-track-resetting');
-            if (proxy) proxy.remove();
-          });
-        });
+        landedSlot.img.alt = `${group.name} photo ${lightboxIndex + 1}`;
+        oldCenterSlot.img.alt = '';
+        syncSlideImage(recycledSlot.img, lightboxIndex + direction, { alt: '' });
+        updateLightboxChrome();
+        preloadNeighbor(lightboxIndex - 2);
+        preloadNeighbor(lightboxIndex + 2);
       }
 
       function openLightbox(index) {

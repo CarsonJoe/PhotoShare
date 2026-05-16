@@ -801,7 +801,6 @@ body.is-ready .page-status {
   --lb-offset-y: 0px;
   --lb-scale: 1;
   --lb-backdrop-opacity: 0.96;
-  --lb-track-base: -100%;
   --lb-track-offset: 0px;
   --lb-shell-pad-top: calc(env(safe-area-inset-top, 0px) + 84px);
   --lb-shell-pad-side: clamp(10px, 3vw, 40px);
@@ -856,26 +855,8 @@ body.is-ready .page-status {
   width: 100%;
   height: 100%;
   display: flex;
-  transform: translate3d(calc(var(--lb-track-base) + var(--lb-track-offset)), 0, 0);
+  transform: translate3d(calc(var(--lb-track-base, -100%) + var(--lb-track-offset)), 0, 0);
   will-change: transform;
-}
-
-.lightbox.is-track-resetting .lb-track {
-  visibility: hidden;
-}
-
-.lb-reset-proxy {
-  position: absolute;
-  top: var(--lb-shell-pad-top);
-  left: var(--lb-shell-pad-side);
-  width: calc(100% - (2 * var(--lb-shell-pad-side)));
-  height: calc(100% - var(--lb-shell-pad-top) - var(--lb-shell-pad-bottom));
-  display: block;
-  object-fit: contain;
-  object-position: center;
-  pointer-events: none;
-  z-index: 1;
-  box-shadow: 0 40px 100px rgba(11, 8, 6, 0.28);
 }
 
 .lightbox.is-track-animating .lb-track {
@@ -912,22 +893,18 @@ body.is-ready .page-status {
     transform 0.26s var(--ease);
 }
 
-#lightboxImage {
+.lb-image.is-active {
   transform: translate(var(--lb-pan-x, 0px), var(--lb-pan-y, 0px)) scale(var(--lb-zoom, 1));
 }
 
 /* Suppress transform transition during active pinch/pan so it tracks fingers */
-.lightbox.is-pinching #lightboxImage {
+.lightbox.is-pinching .lb-image.is-active {
   transition:
     filter 0.2s ease,
     box-shadow 0.38s ease;
 }
 
 .lb-image.is-thumb {
-  filter: blur(1.3px) saturate(0.9) brightness(0.92);
-}
-
-.lb-reset-proxy.is-thumb {
   filter: blur(1.3px) saturate(0.9) brightness(0.92);
 }
 
