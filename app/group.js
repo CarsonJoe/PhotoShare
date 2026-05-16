@@ -838,6 +838,18 @@
         resetZoom();
 
         const landingSlide = targetBase === '-200%' ? lbNextImg : lbPrevImg;
+        const proxy = landingSlide && landingSlide.src ? landingSlide.cloneNode(false) : null;
+        const mediaShell = lbTrack ? lbTrack.closest('.lb-media-shell') : null;
+
+        if (proxy && mediaShell) {
+          proxy.removeAttribute('id');
+          proxy.className = `lb-reset-proxy${landingSlide.classList.contains('is-thumb') ? ' is-thumb' : ''}`;
+          proxy.alt = '';
+          proxy.src = landingSlide.currentSrc || landingSlide.src;
+          mediaShell.appendChild(proxy);
+          lb.classList.add('is-track-resetting');
+        }
+
         if (landingSlide && landingSlide.src) {
           lbImg.dataset.loadToken = String(++loadToken);
           lbImg.classList.toggle('is-thumb', landingSlide.classList.contains('is-thumb'));
@@ -866,6 +878,11 @@
           syncSlideImage(lbNextImg, lightboxIndex + 1, { alt: '' });
           preloadNeighbor(lightboxIndex - 2);
           preloadNeighbor(lightboxIndex + 2);
+
+          requestAnimationFrame(() => {
+            lb.classList.remove('is-track-resetting');
+            if (proxy) proxy.remove();
+          });
         });
       }
 

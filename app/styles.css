@@ -860,6 +860,24 @@ body.is-ready .page-status {
   will-change: transform;
 }
 
+.lightbox.is-track-resetting .lb-track {
+  visibility: hidden;
+}
+
+.lb-reset-proxy {
+  position: absolute;
+  top: var(--lb-shell-pad-top);
+  left: var(--lb-shell-pad-side);
+  width: calc(100% - (2 * var(--lb-shell-pad-side)));
+  height: calc(100% - var(--lb-shell-pad-top) - var(--lb-shell-pad-bottom));
+  display: block;
+  object-fit: contain;
+  object-position: center;
+  pointer-events: none;
+  z-index: 1;
+  box-shadow: 0 40px 100px rgba(11, 8, 6, 0.28);
+}
+
 .lightbox.is-track-animating .lb-track {
   transition: transform 0.3s var(--ease);
 }
@@ -906,6 +924,10 @@ body.is-ready .page-status {
 }
 
 .lb-image.is-thumb {
+  filter: blur(1.3px) saturate(0.9) brightness(0.92);
+}
+
+.lb-reset-proxy.is-thumb {
   filter: blur(1.3px) saturate(0.9) brightness(0.92);
 }
 
