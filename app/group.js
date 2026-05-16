@@ -43,6 +43,8 @@
     const btnPrev = document.querySelector('.lb-prev');
     const btnNext = document.querySelector('.lb-next');
     const btnClose = document.querySelector('.lb-close');
+    const btnZonePrev = document.querySelector('.lb-zone-prev');
+    const btnZoneNext = document.querySelector('.lb-zone-next');
 
     PhotoShare.setBusyState(true, 'Loading album...');
     PhotoShare.renderSkeletons(photosEl, { count: 8, kind: 'photo' });
@@ -904,7 +906,7 @@
       function handleStagePointerDown(event) {
         if (lb.hidden || lightboxAnimating) return;
         if (event.pointerType === 'mouse' && event.button !== 0) return;
-        if (event.target.closest('.lb-btn, .lb-action-btn, .lb-thumb')) return;
+        if (event.target.closest('.lb-btn, .lb-action-btn, .lb-thumb, .lb-zone')) return;
 
         pinchPointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
         lbStage.setPointerCapture(event.pointerId);
@@ -1219,6 +1221,8 @@
       btnPrev.addEventListener('click', () => stepLightbox(-1));
       btnNext.addEventListener('click', () => stepLightbox(1));
       btnClose.addEventListener('click', closeLightbox);
+      if (btnZonePrev) btnZonePrev.addEventListener('click', () => stepLightbox(-1));
+      if (btnZoneNext) btnZoneNext.addEventListener('click', () => stepLightbox(1));
       lbStage.addEventListener('pointerdown', handleStagePointerDown);
       lbStage.addEventListener('pointermove', handleStagePointerMove, { passive: false });
       lbStage.addEventListener('pointerup', handleStagePointerEnd);

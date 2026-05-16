@@ -1173,8 +1173,25 @@ body.is-ready .page-status {
   right: max(18px, calc(env(safe-area-inset-right, 0px) + 18px));
 }
 
+.lb-zone {
+  appearance: none;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 38%;
+  z-index: 1;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+.lb-zone-prev { left: 0; }
+.lb-zone-next { right: 0; }
+
 .lightbox.is-single .lb-prev,
-.lightbox.is-single .lb-next {
+.lightbox.is-single .lb-next,
+.lightbox.is-single .lb-zone {
   display: none;
 }
 
