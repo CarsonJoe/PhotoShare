@@ -1230,6 +1230,71 @@ body.is-ready .page-status {
   opacity: 0.18;
 }
 
+/* Lightbox — light mode */
+:root:not([data-theme="dark"]) .lightbox {
+  background: #fff;
+}
+
+:root:not([data-theme="dark"]) .lb-topbar {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0));
+}
+
+:root:not([data-theme="dark"]) .lb-bottombar {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.92));
+}
+
+:root:not([data-theme="dark"]) .lb-album-name {
+  color: rgba(23, 23, 23, 0.5);
+}
+
+:root:not([data-theme="dark"]) .lb-counter {
+  color: #171717;
+}
+
+:root:not([data-theme="dark"]) .lb-action-btn {
+  border-color: rgba(23, 23, 23, 0.14);
+  background: rgba(23, 23, 23, 0.06);
+  color: #171717;
+}
+
+:root:not([data-theme="dark"]) .lb-action-btn.is-active {
+  background: rgba(23, 23, 23, 0.88);
+  border-color: rgba(23, 23, 23, 0.5);
+  color: #fbf8f2;
+}
+
+:root:not([data-theme="dark"]) .lb-btn {
+  border-color: rgba(23, 23, 23, 0.14);
+  background: rgba(255, 255, 255, 0.88);
+  color: #171717;
+}
+
+:root:not([data-theme="dark"]) .lb-thumb {
+  border-color: rgba(23, 23, 23, 0.12);
+  background: rgba(23, 23, 23, 0.05);
+  opacity: 0.5;
+}
+
+:root:not([data-theme="dark"]) .lb-thumb.is-active {
+  border-color: rgba(23, 23, 23, 0.5);
+  box-shadow: 0 0 0 1px rgba(23, 23, 23, 0.1);
+  opacity: 1;
+}
+
+:root:not([data-theme="dark"]) .lb-progress {
+  background: rgba(23, 23, 23, 0.07);
+  border-color: rgba(23, 23, 23, 0.14);
+  color: #171717;
+}
+
+:root:not([data-theme="dark"]) .lb-image {
+  box-shadow: 0 40px 100px rgba(0, 0, 0, 0.12);
+}
+
+:root:not([data-theme="dark"]) .lightbox.is-chrome-hidden .lb-image {
+  box-shadow: 0 18px 56px rgba(0, 0, 0, 0.08);
+}
+
 .skeleton-card {
   position: relative;
 }
