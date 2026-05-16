@@ -861,7 +861,7 @@ body.is-ready .page-status {
   --lb-offset-x: 0px;
   --lb-offset-y: 0px;
   --lb-scale: 1;
-  --lb-backdrop-opacity: 0.96;
+  --lb-backdrop-opacity: 1;
   --lb-track-offset: 0px;
   --lb-shell-pad-top: calc(env(safe-area-inset-top, 0px) + 84px);
   --lb-shell-pad-side: clamp(10px, 3vw, 40px);
@@ -871,9 +871,7 @@ body.is-ready .page-status {
   z-index: 90;
   min-height: 100vh;
   min-height: 100dvh;
-  background: rgba(15, 12, 10, var(--lb-backdrop-opacity));
-  backdrop-filter: blur(18px) saturate(120%);
-  -webkit-backdrop-filter: blur(18px) saturate(120%);
+  background: #000;
   overflow: hidden;
   overscroll-behavior: none;
   transition: background 0.28s ease;
